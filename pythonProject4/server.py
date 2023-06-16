@@ -49,7 +49,8 @@ class Server:
                         ans = dict()
                         ans["type"] = "request_answer"
                         param = dict()
-                        files = os.listdir('C:/Users/Admin/coliseum/pythonProject4/background')
+                        path = os.getcwd()
+                        files = os.listdir(path + '/background')
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
