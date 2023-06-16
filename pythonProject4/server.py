@@ -55,6 +55,26 @@ class Server:
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
 
+                    elif msg["param"]["file"] == "attack":
+                        ans = dict()
+                        ans["type"] = "request_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        files = os.listdir(path + '/attack')
+                        param["files"] = files.copy()
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+
+                    elif msg["param"]["file"] == "modified":
+                        ans = dict()
+                        ans["type"] = "request_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        files = os.listdir(path + '/modified')
+                        param["files"] = files.copy()
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
                     #
@@ -82,4 +102,4 @@ class Server:
                 print('DISCONNECTED!')
                 is_work = False
 
-Server('192.168.130.1', 1111, 'data.db').start_server()
+Server('192.168.119.1', 1111, 'data.db').start_server()

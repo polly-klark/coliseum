@@ -74,33 +74,51 @@ def otkl(_str):
     form.label_3.setText('Статус: не подключено')
 
 def zapros(_str):
-    obj = dict()
-    obj["type"] = "request"
-    param = dict()
-    if form.radioButton.isChecked():
-        param["file"] = "background"
-    elif form.radioButton_2.isChecked():
-        param["file"] = "attack"
-    elif form.radioButton_3.isChecked():
-        param["file"] = "modified"
-    obj["param"] = param.copy()
-    req = json.dumps(obj)
-    cl.sender(req)
+    if form.radioButton.isChecked() or form.radioButton_2.isChecked() or form.radioButton_3.isChecked():
+        obj = dict()
+        obj["type"] = "request"
+        param = dict()
+        if form.radioButton.isChecked():
+            param["file"] = "background"
+        elif form.radioButton_2.isChecked():
+            param["file"] = "attack"
+        elif form.radioButton_3.isChecked():
+            param["file"] = "modified"
+        obj["param"] = param.copy()
+        req = json.dumps(obj)
+        cl.sender(req)
 
-    is_work = True
-    while is_work:
-        try:
-            data = dict(json.loads(cl.data_receiver()))
-            if data["type"] == "request_answer":
-                for i in data["param"]["files"]:
-                    form.listWidget.addItem(i)
+        is_work = True
+        while is_work:
+            try:
+                data = dict(json.loads(cl.data_receiver()))
+                if data["type"] == "request_answer":
+                    form.listWidget.clear()
+                    for i in data["param"]["files"]:
+                        form.listWidget.addItem(i)
+                    is_work = False
+            except Exception as e:
+                data = ''
                 is_work = False
-        except Exception as e:
-            data = ''
-            is_work = False
+
+# def udalit(_str):
+#     if form.listWidget.currentRowChanged() >= 0 and (form.radioButton.isChecked() or form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
+#         obj = dict()
+#         obj["type"] = "request"
+#         param = dict()
+#         if form.radioButton.isChecked():
+#             param["dir"] = "background"
+#         elif form.radioButton_2.isChecked():
+#             param["dir"] = "attack"
+#         elif form.radioButton_3.isChecked():
+#             param["dir"] = "modified"
+#         param["file"] = form.listWidget.itemClicked().text()
+#         print(param["file"])
+
 
 form.pushButton.clicked.connect(lambda: podkl("string"))
 form.pushButton_7.clicked.connect(lambda: otkl("string"))
 form.pushButton_2.clicked.connect(lambda: zapros("string"))
+# form.pushButton_3.clicked.connect(lambda: udalit("string"))
 
 app.exec_()
