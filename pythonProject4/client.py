@@ -93,7 +93,8 @@ def zapros(_str):
             data = dict(json.loads(cl.data_receiver()))
             if data["type"] == "request_answer":
                 for i in data["param"]["files"]:
-                    form.listWidget.addItem(str(data["param"]["files"][i]))
+                    form.listWidget.addItem(i)
+                is_work = False
         except Exception as e:
             data = ''
             is_work = False

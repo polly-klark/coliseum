@@ -49,7 +49,7 @@ class Server:
                         ans = dict()
                         ans["type"] = "request_answer"
                         param = dict()
-                        files = os.listdir('C:/Users/sapun/PycharmProjects/pythonProject4/background')
+                        files = os.listdir('C:/Users/Admin/coliseum/pythonProject4/background')
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
@@ -81,4 +81,4 @@ class Server:
                 print('DISCONNECTED!')
                 is_work = False
 
-Server('192.168.119.1', 1111, 'data.db').start_server()
+Server('192.168.130.1', 1111, 'data.db').start_server()
