@@ -44,8 +44,9 @@ class Server:
                     user.close()
                     print(f'DISCONNECTED: \n\tIP: {addr[0]}')
                     is_work = False
+
                 elif msg["type"] == "request":
-                    if msg["param"]["file"] == "background":
+                    if msg["param"]["dir"] == "background":
                         ans = dict()
                         ans["type"] = "request_answer"
                         param = dict()
@@ -55,7 +56,7 @@ class Server:
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
 
-                    elif msg["param"]["file"] == "attack":
+                    elif msg["param"]["dir"] == "attack":
                         ans = dict()
                         ans["type"] = "request_answer"
                         param = dict()
@@ -65,7 +66,7 @@ class Server:
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
 
-                    elif msg["param"]["file"] == "modified":
+                    elif msg["param"]["dir"] == "modified":
                         ans = dict()
                         ans["type"] = "request_answer"
                         param = dict()
@@ -74,6 +75,39 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+
+                elif msg["type"] == "delete":
+                    if msg["param"]["dir"] == "background":
+                        ans = dict()
+                        ans["type"] = "delete_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        dir = path + '/background'
+                        os.remove(dir + '/' + msg["param"]["file"])
+                        files = os.listdir(dir)
+                        param["files"] = files.copy()
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+
+                    elif msg["param"]["dir"] == "attack":
+                        ans = dict()
+                        ans["type"] = "delete_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        files = os.listdir(path + '/attack')
+                        # param["files"] = files.copy()
+                        # ans["param"] = param.copy()
+                        # s = json.dumps(ans)
+
+                    elif msg["param"]["dir"] == "modified":
+                        ans = dict()
+                        ans["type"] = "delete_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        files = os.listdir(path + '/modified')
+                        # param["files"] = files.copy()
+                        # ans["param"] = param.copy()
+                        # s = json.dumps(ans)
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
@@ -93,7 +127,7 @@ class Server:
                     #     { 'answer' : answer, 'error' : error }
                     # )
 
-                    self.sender(user, s)
+                self.sender(user, s)
 
                 data = b''
                 msg = ''
