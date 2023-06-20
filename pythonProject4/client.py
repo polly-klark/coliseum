@@ -3,6 +3,7 @@ from socket import *
 import json
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QMessageBox
 
 Form, Window = uic.loadUiType("untitled.ui")
 
@@ -102,7 +103,7 @@ def zapros(_str):
                 is_work = False
 
 def udalit(_str):
-    if form.radioButton.isChecked() or form.radioButton_2.isChecked() or form.radioButton_3.isChecked():
+    if form.listWidget.currentItem() and (form.radioButton.isChecked() or form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
         obj = dict()
         obj["type"] = "delete"
         param = dict()
@@ -130,9 +131,18 @@ def udalit(_str):
                 data = ''
                 is_work = False
 
+def clickMethod(self):
+    QMessageBox.about(self, "Title", "Message")
+def modif(_str):
+    if form.listWidget.currentItem() and (form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
+        pass
+    elif form.listWidget.currentItem() and form.radioButton.isChecked():
+        pass
+
 form.pushButton.clicked.connect(lambda: podkl("string"))
 form.pushButton_7.clicked.connect(lambda: otkl("string"))
 form.pushButton_2.clicked.connect(lambda: zapros("string"))
 form.pushButton_3.clicked.connect(lambda: udalit("string"))
+form.pushButton_4.clicked.connect(lambda: modif("string"))
 
 app.exec_()
