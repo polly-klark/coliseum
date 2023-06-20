@@ -40,7 +40,7 @@ class Server:
                 msg = dict(json.loads(data.decode('utf-8')))
 
                 if msg["type"] == "disconnect":
-                    self.sender(user, 'YOU ARE DISCONNECTED!')
+                    # self.sender(user, 'YOU ARE DISCONNECTED!')
                     user.close()
                     print(f'DISCONNECTED: \n\tIP: {addr[0]}')
                     is_work = False
@@ -55,6 +55,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                     elif msg["param"]["dir"] == "attack":
                         ans = dict()
@@ -65,6 +66,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                     elif msg["param"]["dir"] == "modified":
                         ans = dict()
@@ -75,6 +77,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                 elif msg["type"] == "delete":
                     if msg["param"]["dir"] == "background":
@@ -88,6 +91,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                     elif msg["param"]["dir"] == "attack":
                         ans = dict()
@@ -100,6 +104,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                     elif msg["param"]["dir"] == "modified":
                         ans = dict()
@@ -112,6 +117,7 @@ class Server:
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
+                        self.sender(user, s)
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
@@ -131,7 +137,7 @@ class Server:
                     #     { 'answer' : answer, 'error' : error }
                     # )
 
-                self.sender(user, s)
+
 
                 data = b''
                 msg = ''
@@ -140,4 +146,4 @@ class Server:
                 print('DISCONNECTED!')
                 is_work = False
 
-Server('192.168.130.1', 1111, 'data.db').start_server()
+Server('127.0.0.1', 1111, 'data.db').start_server()
