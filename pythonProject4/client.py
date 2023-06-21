@@ -103,7 +103,7 @@ def zapros(_str):
                 is_work = False
 
 def udalit(_str):
-    if form.listWidget.currentItem() and (form.radioButton.isChecked() or form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
+    if form.listWidget.currentItem() and form.radioButton_3.isChecked():
         obj = dict()
         obj["type"] = "delete"
         param = dict()
@@ -131,13 +131,30 @@ def udalit(_str):
                 data = ''
                 is_work = False
 
-def clickMethod(self):
-    QMessageBox.about(self, "Title", "Message")
+    elif form.listWidget.currentItem() and form.radioButton.isChecked():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Нельзя удалить файлы фонового трафика!")
+
+        x = msg.exec_()
+
+    elif form.listWidget.currentItem() and form.radioButton_2.isChecked():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Нельзя удалить файлы стандартных атак!")
+
+        x = msg.exec_()
+
 def modif(_str):
     if form.listWidget.currentItem() and (form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
         pass
+
     elif form.listWidget.currentItem() and form.radioButton.isChecked():
-        pass
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Нельзя редактировать файлы фонового трафика!")
+
+        x = msg.exec_()
 
 form.pushButton.clicked.connect(lambda: podkl("string"))
 form.pushButton_7.clicked.connect(lambda: otkl("string"))
