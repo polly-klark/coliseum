@@ -1,6 +1,7 @@
 from socket import *
 #from scapy.all import *
 import json
+import re
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMessageBox
@@ -61,11 +62,19 @@ class Client:
 #Client(input('Type server ip: '), 1111).connect()
 
 def podkl(_str):
+    r = r"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}"
     ip = form.lineEdit.text()
-    global cl
-    cl = Client(ip, 1111)
-    cl.connect()
-    form.label_3.setText('Статус: подключено')
+    if re.match(r, ip):
+        global cl
+        cl = Client(ip, 1111)
+        cl.connect()
+        form.label_3.setText('Статус: подключено')
+    else:
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Неверный формат IP адреса!")
+
+        x = msg.exec_()
 
 def otkl(_str):
     obj = dict()
@@ -146,13 +155,46 @@ def udalit(_str):
         x = msg.exec_()
 
 def modif(_str):
-    if form.listWidget.currentItem() and (form.radioButton_2.isChecked() or form.radioButton_3.isChecked()):
-        pass
+    r = r"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}"
+    if form.listWidget.currentItem() and form.radioButton_2.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
+        obj = dict()
+        obj["type"] = "modify"
+        param = dict()
+        param["ip_forward"] = form.lineEdit_2.text()
+        param["ip_victim"] = form.lineEdit_3.text()
+        param["file"] = form.listWidget.currentItem().text()
+        obj["param"] = param.copy()
+        req = json.dumps(obj)
+        cl.sender(req)
 
-    elif form.listWidget.currentItem() and form.radioButton.isChecked():
+        is_work = True
+        while is_work:
+            try:
+                data = dict(json.loads(cl.data_receiver()))
+                if data["type"] == "modify_answer":
+                    pass
+            except Exception as e:
+                data = ''
+                is_work = False
+
+    elif form.listWidget.currentItem() and form.radioButton.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
         msg = QMessageBox()
         msg.setWindowTitle("Ошибка!")
         msg.setText("Нельзя редактировать файлы фонового трафика!")
+
+        x = msg.exec_()
+
+    elif form.listWidget.currentItem() and form.radioButton_3.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Нельзя редактировать модифицированные атаки!")
+
+        x = msg.exec_()
+
+    elif form.listWidget.currentItem() and form.radioButton_2.isChecked() and (not re.match(r, form.lineEdit_2.text()) or not re.match(r, form.lineEdit_3.text())):
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Неверный формат IP адреса!")
 
         x = msg.exec_()
 

@@ -119,6 +119,15 @@ class Server:
                         s = json.dumps(ans)
                         self.sender(user, s)
 
+                elif msg["type"] == "modify":
+                    ip_forward = msg["param"]["ip_forward"]
+                    ip_victim = msg["param"]["ip_victim"]
+                    file = msg["param"]["file"]
+                    ans = dict()
+                    ans["type"] = "modify_answer"
+                    param = dict()
+                    pass
+
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
                     #
