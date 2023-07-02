@@ -1,6 +1,6 @@
 import os
 from socket import *
-#from scapy.all import *
+import scapy.all as scapy
 import sqlite3 as sql
 import json
 
@@ -123,10 +123,38 @@ class Server:
                     ip_forward = msg["param"]["ip_forward"]
                     ip_victim = msg["param"]["ip_victim"]
                     file = msg["param"]["file"]
+                    path = os.getcwd() + '/attack/' + file
+                    a = scapy.rdpcap(path)
+                    A = []
+                    for p in a:
+                        p["IP"].src = ip_forward
+                        p["IP"].dst = ip_victim
+                        #p.show()
+                        del p["IP"].len
+                        del p["IP"].chksum
+                        p = scapy.Ether(p.build())
+                        #p.show()
+                        A.append(p)
+                    old_path = os.getcwd()
+                    new_path = os.getcwd() + '\\modified'
+                    os.chdir(new_path)
+                    new_name = file[:-7] + '_' + ip_forward.replace('.', '_') + '_to_' + ip_victim.replace('.', '_')
+                    scapy.wrpcapng(new_name + '.pcapng', A)
+                    os.chdir(old_path)
                     ans = dict()
                     ans["type"] = "modify_answer"
+                    B = os.listdir(new_path)
                     param = dict()
-                    pass
+                    if new_name + '.pcapng' in B:
+                        param["ans"] = "OK"
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+                        self.sender(user, s)
+                    else:
+                        param["ans"] = "ERROR"
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+                        self.sender(user, s)
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()

@@ -172,19 +172,33 @@ def modif(_str):
             try:
                 data = dict(json.loads(cl.data_receiver()))
                 if data["type"] == "modify_answer":
-                    pass
+                    if data["param"]["ans"] == "OK":
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Успех!")
+                        msg.setText("Атака успешно модифицирована! Вы можете увидеть её в директории \"модифицированные атаки\"")
+
+                        x = msg.exec_()
+
+                    elif data["param"]["ans"] == "ERROR":
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Неудача!")
+                        msg.setText(
+                            "Атака не была модифицирована! Попробуйте ещё раз!")
+
+                        x = msg.exec_()
+                is_work = False
             except Exception as e:
                 data = ''
                 is_work = False
 
-    elif form.listWidget.currentItem() and form.radioButton.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
+    elif form.listWidget.currentItem() and form.radioButton.isChecked():
         msg = QMessageBox()
         msg.setWindowTitle("Ошибка!")
         msg.setText("Нельзя редактировать файлы фонового трафика!")
 
         x = msg.exec_()
 
-    elif form.listWidget.currentItem() and form.radioButton_3.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
+    elif form.listWidget.currentItem() and form.radioButton_3.isChecked():
         msg = QMessageBox()
         msg.setWindowTitle("Ошибка!")
         msg.setText("Нельзя редактировать модифицированные атаки!")
