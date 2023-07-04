@@ -154,6 +154,13 @@ def udalit(_str):
 
         x = msg.exec_()
 
+    elif not form.listWidget.currentItem():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Выберите файл!")
+
+        x = msg.exec_()
+
 def modif(_str):
     r = r"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}"
     if form.listWidget.currentItem() and form.radioButton_2.isChecked() and re.match(r, form.lineEdit_2.text()) and re.match(r, form.lineEdit_3.text()):
@@ -212,10 +219,56 @@ def modif(_str):
 
         x = msg.exec_()
 
+    elif not form.listWidget.currentItem():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Выберите файл!")
+
+        x = msg.exec_()
+
+def zapusk(_str):
+    if form.listWidget.currentItem() and (form.radioButton.isChecked() or form.radioButton_3.isChecked()):
+        obj = dict()
+        obj["type"] = "play"
+        param = dict()
+        if form.radioButton.isChecked():
+            param["dir"] = "background"
+        elif form.radioButton_3.isChecked():
+            param["dir"] = "modified"
+        param["file"] = form.listWidget.currentItem().text()
+        obj["param"] = param.copy()
+        req = json.dumps(obj)
+        cl.sender(req)
+
+        is_work = True
+        while is_work:
+            try:
+                data = dict(json.loads(cl.data_receiver()))
+                if data["type"] == "play_answer":
+                    is_work = False
+            except Exception as e:
+                data = ''
+                is_work = False
+
+    elif form.listWidget.currentItem() and form.radioButton_2.isChecked():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Нельзя запустить стандартную атаку!")
+
+        x = msg.exec_()
+
+    elif not form.listWidget.currentItem():
+        msg = QMessageBox()
+        msg.setWindowTitle("Ошибка!")
+        msg.setText("Выберите файл!")
+
+        x = msg.exec_()
+
 form.pushButton.clicked.connect(lambda: podkl("string"))
 form.pushButton_7.clicked.connect(lambda: otkl("string"))
 form.pushButton_2.clicked.connect(lambda: zapros("string"))
 form.pushButton_3.clicked.connect(lambda: udalit("string"))
 form.pushButton_4.clicked.connect(lambda: modif("string"))
+form.pushButton_5.clicked.connect(lambda: zapusk("string"))
 
 app.exec_()

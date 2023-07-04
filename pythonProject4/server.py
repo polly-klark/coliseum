@@ -1,6 +1,7 @@
 import os
 from socket import *
 import scapy.all as scapy
+import subprocess
 import sqlite3 as sql
 import json
 
@@ -155,6 +156,15 @@ class Server:
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
                         self.sender(user, s)
+
+                elif msg["type"] == "play":
+                    if msg["param"]["dir"] == "background":
+                        ans = dict()
+                        ans["type"] = "play_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        dir = path + '/background'
+                        process = subprocess.run(['tcpreplay', '-i', 'eth0'])
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
