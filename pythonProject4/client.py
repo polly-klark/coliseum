@@ -276,11 +276,43 @@ def zapusk(_str):
 
         x = msg.exec_()
 
+def ostanov(_str):
+    obj = dict()
+    obj["type"] = "stop"
+    req = json.dumps(obj)
+    cl.sender(req)
+
+    is_work = True
+    while is_work:
+        try:
+            data = dict(json.loads(cl.data_receiver()))
+            if data["type"] == "stop_answer":
+                if data["param"]["ans"] == "STOPPED":
+                    msg = QMessageBox()
+                    msg.setWindowTitle("Успех!")
+                    msg.setText(
+                        "Атака успешно остановлена!")
+
+                    x = msg.exec_()
+
+                elif data["param"]["ans"] == "ERROR":
+                    msg = QMessageBox()
+                    msg.setWindowTitle("Неудача!")
+                    msg.setText(
+                        "Атака не была остановлена! Попробуйте ещё раз!")
+
+                    x = msg.exec_()
+            is_work = False
+        except Exception as e:
+            data = ''
+            is_work = False
+
 form.pushButton.clicked.connect(lambda: podkl("string"))
 form.pushButton_7.clicked.connect(lambda: otkl("string"))
 form.pushButton_2.clicked.connect(lambda: zapros("string"))
 form.pushButton_3.clicked.connect(lambda: udalit("string"))
 form.pushButton_4.clicked.connect(lambda: modif("string"))
 form.pushButton_5.clicked.connect(lambda: zapusk("string"))
+form.pushButton_6.clicked.connect(lambda: ostanov("string"))
 
 app.exec_()

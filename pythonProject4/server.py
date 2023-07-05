@@ -4,6 +4,10 @@ import scapy.all as scapy
 import subprocess
 import sqlite3 as sql
 import json
+from subprocess import check_output
+
+def get_pid(name):
+    return check_output(["pidof",name])
 
 class Server:
     def __init__(self, ip, port, base_name):
@@ -165,7 +169,7 @@ class Server:
                         path = os.getcwd()
                         dir = path + '/background'
                         os.chdir(dir)
-                        process = subprocess.run(['tcpreplay', '-i', 'ens33'])
+                        process = subprocess.run(['tcpreplay', '-i', 'ens33', msg["param"]["file"]])
                         os.chdir(path)
 
                     elif msg["param"]["dir"] == "modified":
@@ -175,16 +179,27 @@ class Server:
                         path = os.getcwd()
                         dir = path + '/modified'
                         os.chdir(dir)
-                        process = subprocess.run(['tcpreplay', '-i', 'ens33'])
+                        process = subprocess.run(['tcpreplay', '-i', 'ens33', msg["param"]["file"]])
                         os.chdir(path)
-                        status, pid = processStatus(process)
-                        if status == RUNNING:
+                        if get_pid("tcpreplay"):
                             param["status"] = "RUN"
                         else:
                             param["status"] = "ERROR"
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
                         self.sender(user, s)
+
+                elif msg["type"] == "stop":
+                    ans = dict()
+                    ans["type"] = "stop_answer"
+                    param = dict()
+                    if get_pid("tcpreplay"):
+                        param["status"] = "ERROR"
+                    else:
+                        param["status"] = "STOPPED"
+                    ans["param"] = param.copy()
+                    s = json.dumps(ans)
+                    self.sender(user, s)
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
