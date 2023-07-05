@@ -245,6 +245,18 @@ def zapusk(_str):
             try:
                 data = dict(json.loads(cl.data_receiver()))
                 if data["type"] == "play_answer":
+                    if data["param"]["status"] == "RUN":
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Успех!")
+                        msg.setText("Трафик запущен!")
+
+                        x = msg.exec_()
+                    else:
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Ошибка!")
+                        msg.setText("Трафик не запущен! Попробуйте ещё раз!")
+
+                        x = msg.exec_()
                     is_work = False
             except Exception as e:
                 data = ''

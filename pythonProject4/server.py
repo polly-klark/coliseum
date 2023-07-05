@@ -137,7 +137,7 @@ class Server:
                         #p.show()
                         A.append(p)
                     old_path = os.getcwd()
-                    new_path = os.getcwd() + '\\modified'
+                    new_path = os.getcwd() + '/modified'
                     os.chdir(new_path)
                     new_name = file[:-7] + '_' + ip_forward.replace('.', '_') + '_to_' + ip_victim.replace('.', '_')
                     scapy.wrpcapng(new_name + '.pcapng', A)
@@ -164,7 +164,27 @@ class Server:
                         param = dict()
                         path = os.getcwd()
                         dir = path + '/background'
-                        process = subprocess.run(['tcpreplay', '-i', 'eth0'])
+                        os.chdir(dir)
+                        process = subprocess.run(['tcpreplay', '-i', 'ens33'])
+                        os.chdir(path)
+
+                    elif msg["param"]["dir"] == "modified":
+                        ans = dict()
+                        ans["type"] = "play_answer"
+                        param = dict()
+                        path = os.getcwd()
+                        dir = path + '/modified'
+                        os.chdir(dir)
+                        process = subprocess.run(['tcpreplay', '-i', 'ens33'])
+                        os.chdir(path)
+                        status, pid = processStatus(process)
+                        if status == RUNNING:
+                            param["status"] = "RUN"
+                        else:
+                            param["status"] = "ERROR"
+                        ans["param"] = param.copy()
+                        s = json.dumps(ans)
+                        self.sender(user, s)
 
                     # con = sql.connect(self.data_name)
                     # cur = con.cursor()
