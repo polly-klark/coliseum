@@ -5,6 +5,7 @@ import subprocess
 import sqlite3 as sql
 import json
 from subprocess import check_output
+import signal
 
 def get_pid(name):
     return check_output(["pidof",name])
@@ -193,7 +194,10 @@ class Server:
                     ans = dict()
                     ans["type"] = "stop_answer"
                     param = dict()
-                    if get_pid("tcpreplay"):
+                    pid = get_pid("tcpreplay")
+                    os.kill(pid, signal.SIGTERM)
+                    n = get_pid("tcpreplay")
+                    if n:
                         param["status"] = "ERROR"
                     else:
                         param["status"] = "STOPPED"
