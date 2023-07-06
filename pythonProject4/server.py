@@ -5,7 +5,6 @@ import subprocess
 import sqlite3 as sql
 import json
 from subprocess import check_output
-import signal
 
 def get_pid(name):
     return check_output(["pidof",name])
@@ -91,9 +90,9 @@ class Server:
                         ans["type"] = "delete_answer"
                         param = dict()
                         path = os.getcwd()
-                        dir = path + '/background'
-                        os.remove(dir + '/' + msg["param"]["file"])
-                        files = os.listdir(dir)
+                        print(os.path.join(path, "background", msg["param"]["file"]))
+                        os.remove(os.path.join(path, "background", msg["param"]["file"]))
+                        files = os.listdir(os.path.join(path, "background"))
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
@@ -104,9 +103,9 @@ class Server:
                         ans["type"] = "delete_answer"
                         param = dict()
                         path = os.getcwd()
-                        dir = path + '/attack'
-                        os.remove(dir + '/' + msg["param"]["file"])
-                        files = os.listdir(dir)
+                        print(os.path.join(path, "attack", msg["param"]["file"]))
+                        os.remove(os.path.join(path, "attack", msg["param"]["file"]))
+                        files = os.listdir(os.path.join(path, "attack"))
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
@@ -117,9 +116,9 @@ class Server:
                         ans["type"] = "delete_answer"
                         param = dict()
                         path = os.getcwd()
-                        dir = path + '/modified'
-                        os.remove(dir + '/' + msg["param"]["file"])
-                        files = os.listdir(dir)
+                        print(os.path.join(path, "modified", msg["param"]["file"]))
+                        os.remove(os.path.join(path, "modified", msg["param"]["file"]))
+                        files = os.listdir(os.path.join(path, "modified"))
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
                         s = json.dumps(ans)
@@ -194,10 +193,7 @@ class Server:
                     ans = dict()
                     ans["type"] = "stop_answer"
                     param = dict()
-                    pid = get_pid("tcpreplay")
-                    os.kill(pid, signal.SIGTERM)
-                    n = get_pid("tcpreplay")
-                    if n:
+                    if get_pid("tcpreplay"):
                         param["status"] = "ERROR"
                     else:
                         param["status"] = "STOPPED"
