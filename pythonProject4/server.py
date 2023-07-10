@@ -4,6 +4,7 @@ import scapy.all as scapy
 import subprocess
 import sqlite3 as sql
 import json
+import pathlib
 from subprocess import check_output
 
 def get_pid(name):
@@ -85,39 +86,40 @@ class Server:
                         self.sender(user, s)
 
                 elif msg["type"] == "delete":
-                    if msg["param"]["dir"] == "background":
-                        ans = dict()
-                        ans["type"] = "delete_answer"
-                        param = dict()
-                        path = os.getcwd()
-                        print(os.path.join(path, "background", msg["param"]["file"]))
-                        os.remove(os.path.join(path, "background", msg["param"]["file"]))
-                        files = os.listdir(os.path.join(path, "background"))
-                        param["files"] = files.copy()
-                        ans["param"] = param.copy()
-                        s = json.dumps(ans)
-                        self.sender(user, s)
+                    # if msg["param"]["dir"] == "background":
+                    #     ans = dict()
+                    #     ans["type"] = "delete_answer"
+                    #     param = dict()
+                    #     path = os.getcwd()
+                    #     print(os.path.join(path, "background", msg["param"]["file"]))
+                    #     os.remove(os.path.join(path, "background", msg["param"]["file"]))
+                    #     files = os.listdir(os.path.join(path, "background"))
+                    #     param["files"] = files.copy()
+                    #     ans["param"] = param.copy()
+                    #     s = json.dumps(ans)
+                    #     self.sender(user, s)
 
-                    elif msg["param"]["dir"] == "attack":
-                        ans = dict()
-                        ans["type"] = "delete_answer"
-                        param = dict()
-                        path = os.getcwd()
-                        print(os.path.join(path, "attack", msg["param"]["file"]))
-                        os.remove(os.path.join(path, "attack", msg["param"]["file"]))
-                        files = os.listdir(os.path.join(path, "attack"))
-                        param["files"] = files.copy()
-                        ans["param"] = param.copy()
-                        s = json.dumps(ans)
-                        self.sender(user, s)
+                    # elif msg["param"]["dir"] == "attack":
+                    #     ans = dict()
+                    #     ans["type"] = "delete_answer"
+                    #     param = dict()
+                    #     path = os.getcwd()
+                    #     print(os.path.join(path, "attack", msg["param"]["file"]))
+                    #     os.remove(os.path.join(path, "attack", msg["param"]["file"]))
+                    #     files = os.listdir(os.path.join(path, "attack"))
+                    #     param["files"] = files.copy()
+                    #     ans["param"] = param.copy()
+                    #     s = json.dumps(ans)
+                    #     self.sender(user, s)
 
-                    elif msg["param"]["dir"] == "modified":
+                    if msg["param"]["dir"] == "modified":
                         ans = dict()
                         ans["type"] = "delete_answer"
                         param = dict()
                         path = os.getcwd()
-                        print(os.path.join(path, "modified", msg["param"]["file"]))
-                        os.remove(os.path.join(path, "modified", msg["param"]["file"]))
+                        #print(os.path.join(path, "modified", msg["param"]["file"]))
+                        #os.remove(os.path.join(path, "modified", msg["param"]["file"]))
+                        pathlib.Path.unlink(os.path.join(path, "modified", msg["param"]["file"]))
                         files = os.listdir(os.path.join(path, "modified"))
                         param["files"] = files.copy()
                         ans["param"] = param.copy()
