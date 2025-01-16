@@ -1,0 +1,93 @@
+services: 
+  docker-fastapi:
+    container_name: docker-fastapi
+    build: 
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - dev
+
+  nginx:
+    depends_on: 
+      - docker-fastapi
+    container_name: nginx-proxy
+    build: 
+      context: ./ui/
+      dockerfile: Dockerfile
+    ports: 
+      - "80:80"
+    environment:
+      - REACT_APP_API_URL="/api/"
+    restart: always
+    networks:
+      - dev
+
+  db:
+    image: mongo:latest
+    volumes:
+      - ./dump:/app/dump
+    ports: 
+      - "27017:27017"
+
+  redis:
+    image: redis:alpine
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--bind", "0.0.0.0", "--protected-mode", "no"]
+    restart: always
+    networks:
+      - dev
+
+  celery-worker:
+    build:
+      context: ./app/
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    container_name: celery-worker
+    command: celery -A tasks worker --loglevel=info
+    volumes:
+      - ./app/data:/data
+    depends_on:
+      - docker-fastapi
+    restart: always
+    networks:
+      - dev
+
+#  celery-beat:
+#    build:
+#      context: ./app/
+#      dockerfile: Dockerfile
+#    environment:
+#      - CELERY_BROKER_URL=redis://redis:6379/0
+#    container_name: celery-beat
+#    command: celery -A tasks beat --loglevel=info
+#    depends_on:
+#      - redis
+#    networks:
+#      - dev
+
+  flower:
+    build:
+      context: ./app/
+      dockerfile: Dockerfile
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    container_name: flower
+    command: celery -A tasks flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - docker-fastapi
+    networks:
+      - dev
+
+
+networks:
+  dev:
