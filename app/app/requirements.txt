@@ -28,7 +28,6 @@ motor==3.6.1
 orjson==3.10.7
 packaging==24.1
 passlib==1.7.4
-pkg-about==1.2.1
 psycopg2-binary==2.9.10
 pydantic==2.9.2
 pydantic-extra-types==2.9.0
@@ -37,10 +36,6 @@ pydantic_core==2.23.4
 Pygments==2.18.0
 PyJWT==2.10.1
 pymongo==4.9.2
-PyQt5==5.15.3
-PyQt5-Qt==5.15.2
-PyQt5-Qt5==5.15.15
-PyQt5_sip==12.15.0
 python-dotenv==1.0.1
 python-libpcap==0.5.2
 python-multipart==0.0.12
