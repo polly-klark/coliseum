@@ -1,24 +1,122 @@
-import re
 import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from pymongo import MongoClient
+from pydantic import BaseModel, Field
+import gridfs
+from datetime import datetime, timedelta
+from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorClient
+from passlib.context import CryptContext
+import jwt
 
-import storage.models as models, storage.schemas as schemas
-from storage.database import engine, SessionLocal
-
+# Настройки приложения
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Change this to specific origins in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Подключение к MongoDB
+client = AsyncIOMotorClient('mongodb://localhost:27017/')
+db = client['mydatabase']
+fs = gridfs.GridFS(db)
 
-# Создание таблиц в базе данных (если они еще не существуют)
-models.Base.metadata.create_all(bind=engine)
+# Модель пользователя
+class User(BaseModel):
+    id: str = Field(default_factory=lambda: str(ObjectId()))
+    username: str
+    hashed_password: str
+    role: str  # Добавляем поле для роли
 
-@app.get("/api")
-async def get():
-    return {"message": "Hello, World!"}
+# Настройки для хеширования паролей
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+# JWT настройки
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# Регистрация пользователя
+@app.post("/register")
+async def register(user: User):
+    user.hashed_password = hash_password(user.hashed_password)
+    await db.users.insert_one(user.dict())
+    return {"message": "User registered successfully"}
+
+# Вход пользователя и получение токена
+@app.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = await db.users.find_one({"username": form_data.username})
+    
+    if not user or not verify_password(form_data.password, user['hashed_password']):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    
+    access_token_expires = timedelta(minutes=30)
+    
+    # Включаем роль пользователя в полезную нагрузку токена
+    access_token = create_access_token(
+        data={"sub": user['username'], "role": user['role']}, 
+        expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Загружаем файл
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    if file.filename == '':
+        raise HTTPException(status_code=400, detail="Имя файла отсутствует")
+
+    # Сохраняем файл в GridFS
+    fs.put(file.file, filename=file.filename)
+    
+    return {"message": "Файл загружен", "filename": file.filename}
+
+# Получаем файл
+@app.get("/file/{filename}")
+async def get_file(filename: str):
+    file = fs.find_one({'filename': filename})
+    
+    if file is None:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+    
+    # Возвращаем файл с правильным именем
+    return StreamingResponse(file, media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={file.filename}"})
+
+# Получаем список файлов
+@app.get("/files")
+async def list_files():
+    files = fs.find()
+    file_list = [{"filename": file.filename, "length": file.length, "upload_date": file.upload_date} for file in files]
+    
+    return {"files": file_list}
+
+# Удаляем файл
+@app.delete("/file/{filename}")
+async def delete_file(filename: str):
+    # Находим файл по имени
+    file_info = fs.find_one({'filename': filename})
+    
+    if file_info is None:
+        raise HTTPException(status_code=404, detail="Файл не найден")
+    
+    # Удаляем файл по его ID
+    fs.delete(file_info._id)
+    
+    return {"message": f"Файл '{filename}' успешно удален."}
+
+# Запуск сервера (это можно сделать через командную строку)
+# uvicorn app:app --reload
