@@ -24,10 +24,18 @@ WORKDIR /app
 RUN python3 -m venv /venv
 ADD ./app/app/requirements.txt /app/requirements.txt
 RUN source /venv/bin/activate && pip3 install --no-cache-dir -r /app/requirements.txt
-# Запускаем mongodb
-RUN systemctl start mongod
+# Устанавливаем MongoDB
+RUN apt update
+RUN apt upgrade
+RUN apt install -y gnupg curl
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+RUN echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+RUN apt update
+RUN apt install -y mongodb-org
+# Запускаем MongoDB
+# RUN systemctl start mongod
 # Восстанавливаем из резервной копии
-ADD ./dump /
+ADD ./app/dump /
 RUN mongorestore /dump
 # Копируем код
 ADD ./develop.sh /opt
