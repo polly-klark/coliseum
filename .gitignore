@@ -2,3 +2,6 @@ virtual
 /ui/node_modules
 /ui/yarn.lock
 /app/app/__pycache__
+app/app/storage/venv/
+app/app/venv/
+venv/
