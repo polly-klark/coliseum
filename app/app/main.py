@@ -123,4 +123,4 @@ async def delete_file(filename: str):
     return {"message": f"Файл '{filename}' успешно удален."}
 
 # Запуск сервера (это можно сделать через командную строку)
-# uvicorn app:app --reload
+# uvicorn app:main --reload
