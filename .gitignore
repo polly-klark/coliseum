@@ -5,3 +5,5 @@ virtual
 app/app/storage/venv/
 app/app/venv/
 venv/
+log/
+ui/package-lock.json
