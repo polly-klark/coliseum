@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#Запускаем mongodb
-mongod --fork --logpath /var/log/mongo/mongodb.log &
-mongorestore /dump
 #Запускаем бэкенд
 source /venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info --reload &
 #Запускаем redis
