@@ -32,11 +32,13 @@ RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg -o /usr/s
 RUN echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-8.0.list
 RUN apt update
 RUN apt install -y mongodb-org
+#RUN apt-get update && apt-get install -y systemd
 # Запускаем MongoDB
-# RUN systemctl start mongod
+#RUN systemctl start mongod
 # Восстанавливаем из резервной копии
-ADD ./app/dump /
-RUN mongorestore /dump
+#ADD ./app/dump /
+#RUN ls -la /
+#RUN mongorestore /dump
 # Копируем код
 ADD ./develop.sh /opt
 # Открываем порты для FastAPI и React

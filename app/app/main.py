@@ -87,7 +87,7 @@ async def upload_file(file: UploadFile = File(...)):
     # Сохраняем файл в GridFS
     fs.put(file.file, filename = file.filename)
     
-    return {"message": "Файл загружен", "filename": file.filename}
+    return {"message": "File is loaded", "filename": file.filename}
 
 # Получаем файл
 @app.get("/file/{filename}")
@@ -120,7 +120,7 @@ async def delete_file(filename: str):
     # Удаляем файл по его ID
     fs.delete(file_info._id)
     
-    return {"message": f"Файл '{filename}' успешно удален."}
+    return {"message": f"File '{filename}' is deleted successfully."}
 
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload
