@@ -57,13 +57,13 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 @app.post("/register")
 async def register(user: User):
     user.hashed_password = hash_password(user.hashed_password)
-    await db.users.insert_one(user.model_dump())
+    await auth_db.users.insert_one(user.model_dump())
     return {"message": "User registered successfully"}
 
 # Вход пользователя и получение токена
 @app.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await db.users.find_one({"username": form_data.username})
+    user = await auth_db.users.find_one({"username": form_data.username})
     
     if not user or not verify_password(form_data.password, user['hashed_password']):
         raise HTTPException(status_code = 400, detail = "Invalid credentials")
