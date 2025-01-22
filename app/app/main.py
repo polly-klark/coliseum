@@ -65,7 +65,7 @@ async def register(user: User):
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await auth_db.users.find_one({"username": form_data.username})
     
-    if not user or not verify_password(form_data.password, user['hashed_password']):
+    if not user or not verify_password(hash_password(form_data.password), user['hashed_password']):
         raise HTTPException(status_code = 400, detail = "Invalid credentials")
     
     access_token_expires = timedelta(minutes=30)
