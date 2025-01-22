@@ -90,7 +90,7 @@ rm -rf ~/src/*
 ### 4. Распаковываем архив с СПО
 
 ```bash
-tar xvf routators-fastapi-react.tar.xz
+tar xvf template-fastapi-react.tar.xz
 ```
 
 ### 5. Удаляем старые контейнеры
@@ -102,7 +102,7 @@ docker system prune --all
 ### 6. Переходим в директорию с проектом
 
 ```bash
-cd ~/src/routators-fastapi-react
+cd ~/src/template-fastapi-react
 ```
 
 ### 7. Запускаем СПО
