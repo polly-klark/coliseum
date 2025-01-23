@@ -128,8 +128,17 @@ async def get_file(filename: str):
 # Получаем список файлов
 @app.get("/files")
 async def list_files():
-    files = fs.find()
-    file_list = [{"filename": file.filename, "length": file.length, "upload_date": file.upload_date} for file in files]
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fs.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
     
     return {"files": file_list}
 
