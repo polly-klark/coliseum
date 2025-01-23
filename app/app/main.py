@@ -9,8 +9,12 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 # from passlib.context import CryptContext 
-import gostcrypto, jwt, secrets
+import gostcrypto, jwt, secrets, logging
 from datetime import datetime, timezone
+
+# Настройка логирования
+logging.basicConfig(filename='app.log', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Настройки приложения
 app = FastAPI()
@@ -85,20 +89,41 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code = 400, detail = "File has not name")
 
     # Сохраняем файл в GridFS
-    fs.put(file.file, filename = file.filename)
+    try:
+        # Открываем поток для записи в GridFS
+        async with fs.open_upload_stream(file.filename) as grid_in:
+            while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
+                await grid_in.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     
-    return {"message": "File is loaded", "filename": file.filename}
+    return {"message": "File uploaded successfully", "filename": file.filename}
 
 # Получаем файл
 @app.get("/file/{filename}")
 async def get_file(filename: str):
-    file = fs.find_one({'filename': filename})
+        
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Error: {str(e)}")
+
+    try:             
+        # Создаем генератор для чтения файла по частям
+        async def file_generator():
+            while True:
+                chunk = await grid_out.read(1024)  # Читаем файл порциями по 1024 байта
+                if not chunk:
+                    break
+                yield chunk
     
-    if file is None:
-        raise HTTPException(status_code = 404, detail = "File not found")
-    
-    # Возвращаем файл с правильным именем
-    return StreamingResponse(file, media_type = 'application/octet-stream', headers = {"Content-Disposition": f"attachment; filename={file.filename}"})
+        # Возвращаем файл с правильным именем
+        return StreamingResponse(file_generator(), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Получаем список файлов
 @app.get("/files")
@@ -111,14 +136,14 @@ async def list_files():
 # Удаляем файл
 @app.delete("/file/{filename}")
 async def delete_file(filename: str):
-    # Находим файл по имени
-    file_info = fs.find_one({'filename': filename})
-    
-    if file_info is None:
-        raise HTTPException(status_code = 404, detail="File not found")
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Error: {str(e)}")
     
     # Удаляем файл по его ID
-    fs.delete(file_info._id)
+    await fs.delete(grid_out._id)
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
