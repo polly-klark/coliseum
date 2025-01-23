@@ -107,7 +107,7 @@ async def get_file(filename: str):
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
 
     try:             
         # Создаем генератор для чтения файла по частям
@@ -140,7 +140,7 @@ async def delete_file(filename: str):
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Error: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
     
     # Удаляем файл по его ID
     await fs.delete(grid_out._id)
