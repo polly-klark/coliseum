@@ -103,6 +103,43 @@ async def upload_file(file: UploadFile = File(...)):
             while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
                 await grid_in.write(content)
     except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    
+    return {"message": "File uploaded successfully", "filename": file.filename}
+
+# Загружаем фоновый трафик
+@app.post("/background/upload")
+async def upload_file(file: UploadFile = File(...)):
+    if file.filename == '':
+        raise HTTPException(status_code = 400, detail = "File has not name")
+
+    # Сохраняем файл в GridFS
+    try:
+        # Открываем поток для записи в GridFS
+        async with fsb.open_upload_stream(file.filename) as grid_in:
+            while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
+                await grid_in.write(content)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    
+    return {"message": "File uploaded successfully", "filename": file.filename}
+
+# Загружаем файл атаки
+@app.post("/attack/upload")
+async def upload_file(file: UploadFile = File(...)):
+    if file.filename == '':
+        raise HTTPException(status_code = 400, detail = "File has not name")
+
+    # Сохраняем файл в GridFS
+    try:
+        # Открываем поток для записи в GridFS
+        async with fsa.open_upload_stream(file.filename) as grid_in:
+            while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
+                await grid_in.write(content)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     
     return {"message": "File uploaded successfully", "filename": file.filename}
@@ -115,6 +152,7 @@ async def get_file(filename: str):
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
 
     try:             
@@ -225,10 +263,41 @@ async def delete_file(filename: str):
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
+        logger.error(f"Ошибка при удалении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
     
     # Удаляем файл по его ID
     await fs.delete(grid_out._id)
+    
+    return {"message": f"File '{filename}' is deleted successfully."}
+
+# Удаляем файл атаки
+@app.delete("/attack/{filename}")
+async def delete_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsa.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при удалении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Удаляем файл по его ID
+    await fsa.delete(grid_out._id)
+    
+    return {"message": f"File '{filename}' is deleted successfully."}
+
+# Удаляем файл фонового трафика
+@app.delete("/background/{filename}")
+async def delete_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsb.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при удалении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Удаляем файл по его ID
+    await fsb.delete(grid_out._id)
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
