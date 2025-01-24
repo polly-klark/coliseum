@@ -21,8 +21,12 @@ app = FastAPI()
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient('mongodb://localhost:27017/')
-auth_db = client['test']
+auth_db = client['auth_db']
 db = client['test_gridfs']
+bg = client['background']
+adb = client['attack']
+user_db = client['user_m']
+admin_db = client['admin_m']
 # print(isinstance(db, database.Database))  # Должно вернуть True
 fs = AsyncIOMotorGridFSBucket(db)
 
