@@ -1,4 +1,4 @@
-import os
+# import os
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -29,6 +29,10 @@ user_db = client['user_m']
 admin_db = client['admin_m']
 # print(isinstance(db, database.Database))  # Должно вернуть True
 fs = AsyncIOMotorGridFSBucket(db)
+fsa = AsyncIOMotorGridFSBucket(adb)
+fsb = AsyncIOMotorGridFSBucket(bg)
+fsadmin = AsyncIOMotorGridFSBucket(admin_db)
+fsuser = AsyncIOMotorGridFSBucket(user_db)
 
 # Модель пользователя
 class User(BaseModel):
@@ -134,6 +138,74 @@ async def get_file(filename: str):
 async def list_files():
     # Получаем курсор для всех файлов в GridFS
     cursor = fs.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    
+    return {"files": file_list}
+
+# Получаем список файлов атак
+@app.get("/attack")
+async def list_files():
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fsa.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    
+    return {"files": file_list}
+
+# Получаем список файлов фонового трафика
+@app.get("/background")
+async def list_files():
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fsb.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    
+    return {"files": file_list}
+
+# Получаем список файлов админа
+@app.get("/adminm")
+async def list_files():
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fsadmin.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    
+    return {"files": file_list}
+
+# Получаем список файлов
+@app.get("/userm")
+async def list_files():
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fsuser.find()
     
     # Создаем список файлов, извлекая необходимые поля
     file_list = []
