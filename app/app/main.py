@@ -205,6 +205,25 @@ async def list_files():
     
     return {"files": file_list}
 
+# Получае выбранный файл атаки
+@app.get("/attack/{filename}")
+async def file_info(filename: str):
+    # Получаем курсор для всех файлов в GridFS
+    cursor = fsa.find()
+    
+    # Создаем список файлов, извлекая необходимые поля
+    file_info = []
+    async for file in cursor:
+        if file.filename == filename:
+            file_info.append({
+                "filename": file.filename,
+                "length": file.length,
+                "upload_date": file.upload_date,
+            })
+    
+    return {"file": file_info}
+
+
 # Получаем список файлов фонового трафика
 @app.get("/background")
 async def list_files():
