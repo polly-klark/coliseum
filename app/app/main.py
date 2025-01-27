@@ -205,7 +205,7 @@ async def list_files():
     
     return {"files": file_list}
 
-# Получае выбранный файл атаки
+# Получаем выбранный файл атаки
 @app.get("/attack/{filename}")
 async def file_info(filename: str):
     # Получаем курсор для всех файлов в GridFS
@@ -223,6 +223,10 @@ async def file_info(filename: str):
     
     return {"file": file_info}
 
+# Модифицируем файл атаки
+@app.post("modification/{filename}")
+async def file_modification(filename: str, ip_forward: str, ip_victim: str):
+    pass
 
 # Получаем список файлов фонового трафика
 @app.get("/background")
