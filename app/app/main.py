@@ -10,6 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 # from passlib.context import CryptContext 
 import gostcrypto, jwt, secrets, logging, tempfile, os
 from datetime import datetime, timezone
+import scapy.all as scapy
 
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO)
@@ -247,6 +248,23 @@ async def file_modification(filename: str, ip_forward: str, ip_victim: str):
             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
+    # Реализуем изменение IP
+    try:
+        packets = scapy.rdpcap(temp_file_path)  # Читаем пакеты из временного файла
+        for packet in packets:
+            if packet.haslayer(scapy.IP):
+                packet["IP"].src = ip_forward
+                packet["IP"].dst = ip_victim
+                del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
+                del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
+
+        # Создаем новый временный файл для сохранения измененных пакетов
+        modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
+        scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
+    except Exception as e:
+        logger.error(f"Ошибка при обработке пакетов: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
     # # Возвращаем файл с правильным именем
     # try:
     #     return StreamingResponse(open(temp_file_path, mode='rb'), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
@@ -259,6 +277,8 @@ async def file_modification(filename: str, ip_forward: str, ip_victim: str):
     #     # Удаляем временный файл после завершения обработки запроса
     #     if os.path.exists(temp_file_path):
     #         os.remove(temp_file_path)
+
+    return {"message": f"File '{filename}' modified successfully."}
 
 # Получаем список файлов фонового трафика
 @app.get("/background")
