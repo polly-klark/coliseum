@@ -1,4 +1,3 @@
-# import os
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -9,7 +8,7 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 # from passlib.context import CryptContext 
-import gostcrypto, jwt, secrets, logging
+import gostcrypto, jwt, secrets, logging, tempfile, os
 from datetime import datetime, timezone
 
 # Настройка логирования
@@ -155,7 +154,6 @@ async def upload_file(file: UploadFile = File(...)):
 # Получаем файл
 @app.get("/file/{filename}")
 async def get_file(filename: str):
-        
     # Открываем поток для чтения файла из GridFS по имени
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
@@ -226,7 +224,41 @@ async def file_info(filename: str):
 # Модифицируем файл атаки
 @app.post("modification/{filename}")
 async def file_modification(filename: str, ip_forward: str, ip_victim: str):
-    pass
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Создаем временный файл для сохранения содержимого
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        try:
+            # Читаем данные из GridFS и записываем их во временный файл
+            while True:
+                chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
+                if not chunk:
+                    break
+                temp_file.write(chunk)
+
+            temp_file_path = temp_file.name  # Сохраняем имя временного файла
+
+        except Exception as e:
+            logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    # # Возвращаем файл с правильным именем
+    # try:
+    #     return StreamingResponse(open(temp_file_path, mode='rb'), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+    
+    # except Exception as e:
+    #     logger.error(f"Ошибка при возврате файла: {str(e)}")
+    #     raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+    # finally:
+    #     # Удаляем временный файл после завершения обработки запроса
+    #     if os.path.exists(temp_file_path):
+    #         os.remove(temp_file_path)
 
 # Получаем список файлов фонового трафика
 @app.get("/background")
