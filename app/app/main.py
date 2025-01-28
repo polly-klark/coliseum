@@ -65,6 +65,14 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# Создаем генератор для чтения файла по частям
+async def file_generator(grid_out):
+    while True:
+        chunk = await grid_out.read(1024)  # Читаем файл порциями по 1024 байта
+        if not chunk:
+            break
+        yield chunk
+
 # Регистрация пользователя
 @app.post("/register")
 async def register(user: User):
@@ -156,16 +164,8 @@ async def get_file(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
 
     try:             
-        # Создаем генератор для чтения файла по частям
-        async def file_generator():
-            while True:
-                chunk = await grid_out.read(1024)  # Читаем файл порциями по 1024 байта
-                if not chunk:
-                    break
-                yield chunk
-    
         # Возвращаем файл с правильным именем
-        return StreamingResponse(file_generator(), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
         logger.error(f"Ошибка при получении файла: {str(e)}")
