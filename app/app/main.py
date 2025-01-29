@@ -65,6 +65,15 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def rename_file(original_filename):
+    # Разделяем имя файла на имя и расширение
+    name, ext = os.path.splitext(original_filename)
+    
+    # Создаем новое имя файла, добавляя "_modified"
+    new_filename = f"{name}_modified{ext}"
+
+    return new_filename
+
 # Создаем генератор для чтения файла по частям
 async def file_generator(grid_out):
     while True:
@@ -261,13 +270,12 @@ async def file_modification(filename: str, ip_forward: str, ip_victim: str):
         # Создаем новый временный файл для сохранения измененных пакетов
         modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
         scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
-    except Exception as e:
-        logger.error(f"Ошибка при обработке пакетов: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
+        new_filename = rename_file(filename)
+   
     # Загружаем измененный файл в GridFS
         with open(modified_temp_file_path, 'rb') as f:
-            await fs.upload_from_stream(filename, f)
+            await fsadmin.upload_from_stream(new_filename, f)
+            await fsuser.upload_from_stream(new_filename, f)
 
     except Exception as e:
         logger.error(f"Ошибка при обработке пакетов: {str(e)}")
