@@ -272,9 +272,12 @@ async def file_modification(filename: str, ip_forward: str, ip_victim: str):
         scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
         new_filename = rename_file(filename)
    
-    # Загружаем измененный файл в GridFS
+        # Загружаем измененный файл в GridFS
         with open(modified_temp_file_path, 'rb') as f:
             await fsadmin.upload_from_stream(new_filename, f)
+            
+        # Загружаем измененный файл в GridFS
+        with open(modified_temp_file_path, 'rb') as f:
             await fsuser.upload_from_stream(new_filename, f)
 
     except Exception as e:
