@@ -232,7 +232,7 @@ async def file_info(filename: str):
     return {"file": file_info}
 
 # Модифицируем файл атаки
-@app.post("modification/{filename}")
+@app.post("/modification/{filename}")
 async def file_modification(filename: str, ip_forward: str, ip_victim: str):
     # Открываем поток для чтения файла из GridFS по имени
     try:
