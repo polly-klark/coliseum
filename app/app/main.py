@@ -265,20 +265,22 @@ async def file_modification(filename: str, ip_forward: str, ip_victim: str):
         logger.error(f"Ошибка при обработке пакетов: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # # Возвращаем файл с правильным именем
-    # try:
-    #     return StreamingResponse(open(temp_file_path, mode='rb'), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
-    
-    # except Exception as e:
-    #     logger.error(f"Ошибка при возврате файла: {str(e)}")
-    #     raise HTTPException(status_code=500, detail="Internal Server Error")
-    
-    # finally:
-    #     # Удаляем временный файл после завершения обработки запроса
-    #     if os.path.exists(temp_file_path):
-    #         os.remove(temp_file_path)
+    # Загружаем измененный файл в GridFS
+        with open(modified_temp_file_path, 'rb') as f:
+            await fs.upload_from_stream(filename, f)
 
-    return {"message": f"File '{filename}' modified successfully."}
+    except Exception as e:
+        logger.error(f"Ошибка при обработке пакетов: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    finally:
+        # Удаляем временные файлы после завершения обработки запроса
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        if os.path.exists(modified_temp_file_path):
+            os.remove(modified_temp_file_path)
+
+    return {"message": f"File '{filename}' modified and uploaded successfully."}
 
 # Получаем список файлов фонового трафика
 @app.get("/background")
