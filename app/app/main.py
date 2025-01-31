@@ -62,12 +62,20 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
     
-    user = fake_users_db.get(username)
+    user = auth_db.users.find_one({"username": username})
     
     if user is None:
         raise credentials_exception
     
     return user
+
+def role_checker(required_role: str):
+    def role_checker_inner(user: User = Depends(get_current_user)):
+        if user.role != required_role:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Operation not permitted")
+        return user
+    return role_checker_inner
 
 # Регистрация пользователя
 @app.post("/register")
@@ -84,15 +92,23 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user or not verify_password(hash_password(form_data.password), user['hashed_password']):
         raise HTTPException(status_code = 400, detail = "Invalid credentials")
     
-    access_token_expires = timedelta(minutes=30)
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
     # Включаем роль пользователя в полезную нагрузку токена
     access_token = create_access_token(
-        data = {"sub": user['username'], "is_admin": user['is_admin']}, 
+        data = {"sub": user['username']}, 
         expires_delta = access_token_expires
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/admin")
+async def read_admin_data(current_user: User = Depends(role_checker("admin"))):
+    return {"message": "This is admin data."}
+
+@app.get("/user")
+async def read_user_data(current_user: User= Depends(role_checker("user"))):
+    return {"message": "This is user data."}
 
 # Загружаем файл
 @app.post("/upload")
