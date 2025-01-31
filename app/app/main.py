@@ -78,7 +78,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 def role_checker(required_role: str):
     async def role_checker_inner(user: User = Depends(get_current_user)):
-        user = await user  # Добавьте await здесь
         if user.role != required_role:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operation not permitted")
         return user
