@@ -62,19 +62,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
     
-    user = auth_db.users.find_one({"username": username})
-    
-    if user is None:
+    # Получаем пользователя из базы данных
+    user_data = await auth_db.users.find_one({"username": username})
+
+    if user_data is None:
         raise credentials_exception
     
+    # Преобразуем данные из базы в экземпляр модели User
+    try:
+        user = User(**user_data)  # Создаем объект User из словаря
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error parsing user data")
+          
     return user
 
 def role_checker(required_role: str):
     async def role_checker_inner(user: User = Depends(get_current_user)):
         user = await user  # Добавьте await здесь
         if user.role != required_role:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Operation not permitted")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operation not permitted")
         return user
     return role_checker_inner
 
