@@ -2,15 +2,15 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 # from pymongo import MongoClient, database
-from pydantic import BaseModel, Field
 # import gridfs
 from datetime import datetime, timedelta
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 # from passlib.context import CryptContext 
-import gostcrypto, jwt, secrets, logging, tempfile, os
+import jwt, secrets, logging, tempfile, os
 from datetime import datetime, timezone
 import scapy.all as scapy
+from models import User, hash_password, verify_password
 
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO)
@@ -33,23 +33,6 @@ fsa = AsyncIOMotorGridFSBucket(adb)
 fsb = AsyncIOMotorGridFSBucket(bg)
 fsadmin = AsyncIOMotorGridFSBucket(admin_db)
 fsuser = AsyncIOMotorGridFSBucket(user_db)
-
-# Модель пользователя
-class User(BaseModel):
-    id: str = Field(default_factory=lambda: str(ObjectId()))
-    username: str
-    hashed_password: str
-    is_admin: bool  # Добавляем поле для роли
-
-# # Настройки для хеширования паролей
-# pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-def hash_password(password: str) -> str:
-    password = password.encode('cp1251')
-    return gostcrypto.gosthash.new('streebog256', data=password).hexdigest()
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return plain_password == hashed_password
 
 # JWT настройки
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
