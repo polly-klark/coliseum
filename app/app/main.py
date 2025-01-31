@@ -47,7 +47,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -70,7 +70,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 def role_checker(required_role: str):
-    def role_checker_inner(user: User = Depends(get_current_user)):
+    async def role_checker_inner(user: User = Depends(get_current_user)):
+        user = await user  # Добавьте await здесь
         if user.role != required_role:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Operation not permitted")
