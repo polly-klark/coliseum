@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 import secrets, logging, tempfile, os
-from jose import JWTError, jwt
+from jose import JWTError, jwt 
 from datetime import datetime, timezone
 import scapy.all as scapy
 from models import User, hash_password, verify_password, rename_file, file_generator
@@ -199,7 +199,7 @@ async def file_info(filename: str):
 async def file_modification(filename: str, ip_forward: str, ip_victim: str):
     # Открываем поток для чтения файла из GridFS по имени
     try:
-        grid_out = await fs.open_download_stream_by_name(filename)
+        grid_out = await fsa.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
