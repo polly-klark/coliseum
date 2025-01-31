@@ -107,7 +107,7 @@ async def read_admin_data(current_user: User = Depends(role_checker("admin"))):
     return {"message": "This is admin data."}
 
 @app.get("/user")
-async def read_user_data(current_user: User= Depends(role_checker("user"))):
+async def read_user_data(current_user: User = Depends(role_checker("user"))):
     return {"message": "This is user data."}
 
 # Загружаем файл
