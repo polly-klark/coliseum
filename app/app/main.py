@@ -1,11 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
-from fastapi.security import OAuth2PasswordRequestForm
-from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 import secrets, logging, tempfile, os
 from jose import JWTError, jwt 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
 from models import User, hash_password, verify_password, rename_file, file_generator
 
@@ -34,6 +33,9 @@ fsuser = AsyncIOMotorGridFSBucket(user_db)
 # JWT настройки
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -44,6 +46,28 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = fake_users_db.get(username)
+    
+    if user is None:
+        raise credentials_exception
+    
+    return user
 
 # Регистрация пользователя
 @app.post("/register")
