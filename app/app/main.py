@@ -1,16 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
-# from pymongo import MongoClient, database
-# import gridfs
 from datetime import datetime, timedelta
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
-# from passlib.context import CryptContext 
-import jwt, secrets, logging, tempfile, os
+import secrets, logging, tempfile, os
+from jose import JWTError, jwt
 from datetime import datetime, timezone
 import scapy.all as scapy
-from models import User, hash_password, verify_password
+from models import User, hash_password, verify_password, rename_file, file_generator
 
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO)
@@ -47,23 +44,6 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-def rename_file(original_filename):
-    # Разделяем имя файла на имя и расширение
-    name, ext = os.path.splitext(original_filename)
-    
-    # Создаем новое имя файла, добавляя "_modified"
-    new_filename = f"{name}_modified{ext}"
-
-    return new_filename
-
-# Создаем генератор для чтения файла по частям
-async def file_generator(grid_out):
-    while True:
-        chunk = await grid_out.read(1024)  # Читаем файл порциями по 1024 байта
-        if not chunk:
-            break
-        yield chunk
 
 # Регистрация пользователя
 @app.post("/register")
