@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 # Устанавливаем зависимости React
 WORKDIR /ui
-RUN npm install -g create-react-app
+RUN npm install -g create-react-app && npm install axios react-router-dom
 # Устанавливаем зависимости FastAPI
 WORKDIR /app
 RUN python3 -m venv /venv
