@@ -5,7 +5,7 @@ const Login = ({ setToken }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const handleSubmit = async (e) => {e.preventDefault();
-        const response = await axios.post('http://localhost:8000/token', new URLSearchParams({username, password,})); setToken(response.data.access_token);
+        const response = await axios.post('http://localhost:8000/login', new URLSearchParams({username, password,})); setToken(response.data.access_token);
     };
 
     return (
