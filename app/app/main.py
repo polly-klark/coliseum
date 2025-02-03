@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
 from models import User, hash_password, verify_password, rename_file, file_generator
+from fastapi.middleware.cors import CORSMiddleware
 
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO)
@@ -14,6 +15,22 @@ logger = logging.getLogger(__name__)
 
 # Настройки приложения
 app = FastAPI()
+
+# Укажите разрешенные источники
+origins = [
+    "http://localhost:3000",  # ваш React фронтенд
+    "http://127.0.0.1:3000",
+    # Добавьте другие домены, если необходимо
+]
+
+# Добавление CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Разрешенные источники
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешенные методы (GET, POST и т.д.)
+    allow_headers=["*"],  # Разрешенные заголовки
+)
 
 # Подключение к MongoDB
 client = AsyncIOMotorClient('mongodb://localhost:27017/')
