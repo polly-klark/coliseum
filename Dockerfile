@@ -16,9 +16,6 @@ RUN apt-get update && apt-get install -y \
     redis-server \
     libpcap-dev \ 
     && apt-get clean
-# Устанавливаем зависимости React
-WORKDIR /ui
-RUN npm install -g create-react-app && npm install axios react-router-dom
 # Устанавливаем зависимости FastAPI
 WORKDIR /app
 RUN python3 -m venv /venv
@@ -32,6 +29,9 @@ RUN apt update && apt install -y mongodb-org
 # RUN mongod --fork --logpath /var/log/mongodb.log &
 # ADD ./app/dump /dump
 # RUN mongorestore /dump
+# Устанавливаем зависимости React
+WORKDIR /ui
+RUN npm create vite ui && npm install axios react-router-dom && npm install && npm install antd --save 
 # Копируем код
 ADD ./develop.sh /opt
 # Открываем порты для FastAPI и React
