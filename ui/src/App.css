@@ -51,5 +51,8 @@
 
 .input {
   width: 200px; /* Установка ширины для Input */
-  margin-bottom: 10px; /* Отступ между элементами */
+}
+
+.button {
+  width: 50px;
 }

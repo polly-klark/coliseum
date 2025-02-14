@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Button, Input } from "antd";
+import './App.css'; // Импорт вашего CSS файла
 
 const Login = ({ setToken }) => {
   const [username, setUsername] = useState("");
@@ -37,7 +38,7 @@ const Login = ({ setToken }) => {
           placeholder="Password"
         />
         {/* Добавляем htmlType="submit" */}
-        <Button htmlType="submit" color="default" variant="solid">
+        <Button className="button" htmlType="submit" color="default" variant="solid">
           Войти
         </Button>
       </form>
