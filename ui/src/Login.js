@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Button, Input } from "antd";
-import './App.css'; // Импорт вашего CSS файла
+import "./App.css"; // Импорт вашего CSS файла
 
 const Login = ({ setToken }) => {
   const [username, setUsername] = useState("");
@@ -26,21 +26,25 @@ const Login = ({ setToken }) => {
     <div className="container">
       <form className="form" onSubmit={handleSubmit}>
         <Input
+          className="input"
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Username"
         />
         <Input
+          className="input"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
         />
-        {/* Добавляем htmlType="submit" */}
-        <Button className="button" htmlType="submit" color="default" variant="solid">
-          Войти
-        </Button>
+        <div className="button-container">
+          {/* Добавляем htmlType="submit" */}
+          <Button htmlType="submit" color="default" variant="solid">
+            Войти
+          </Button>
+        </div>
       </form>
     </div>
   );

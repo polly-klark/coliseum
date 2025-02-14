@@ -51,8 +51,11 @@
 
 .input {
   width: 200px; /* Установка ширины для Input */
+  margin-bottom: 20px;
 }
 
-.button {
-  width: 50px;
+.button-container {
+  display: flex;
+  justify-content: center;
+  width: 75px;
 }
