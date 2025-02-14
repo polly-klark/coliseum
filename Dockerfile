@@ -32,6 +32,7 @@ RUN apt update && apt install -y mongodb-org
 # Устанавливаем зависимости React
 WORKDIR /ui
 RUN npm create vite ui && npm install axios react-router-dom && npm install && npm install antd --save 
+WORKDIR /app
 # Копируем код
 ADD ./develop.sh /opt
 # Открываем порты для FastAPI и React

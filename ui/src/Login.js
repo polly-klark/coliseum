@@ -1,19 +1,47 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from "react";
+import axios from "axios";
+import { Button, Input } from "antd";
 
 const Login = ({ setToken }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const handleSubmit = async (e) => {e.preventDefault();
-    const response = await axios.post('http://localhost:8000/login', new URLSearchParams({username, password,})); setToken(response.data.access_token);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Предотвращаем перезагрузку страницы
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/login",
+        new URLSearchParams({
+          username,
+          password,
+        })
+      );
+      setToken(response.data.access_token); // Устанавливаем токен
+    } catch (error) {
+      console.error("Ошибка авторизации:", error);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
-      <button type="submit">Login</button>
-    </form>
+    <div className="container">
+      <form className="form" onSubmit={handleSubmit}>
+        <Input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+        />
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        {/* Добавляем htmlType="submit" */}
+        <Button htmlType="submit" color="default" variant="solid">
+          Войти
+        </Button>
+      </form>
+    </div>
   );
 };
 

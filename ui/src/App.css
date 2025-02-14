@@ -36,3 +36,20 @@
     transform: rotate(360deg);
   }
 }
+
+.container {
+  display: flex;
+  justify-content: center; /* Центрирование по горизонтали */
+  align-items: center; /* Центрирование по вертикали */
+  height: 100vh; /* Высота контейнера на всю высоту экрана */
+}
+
+.form {
+  display: flex;
+  flex-direction: column; /* Вертикальное расположение элементов */
+}
+
+.input {
+  width: 200px; /* Установка ширины для Input */
+  margin-bottom: 10px; /* Отступ между элементами */
+}
