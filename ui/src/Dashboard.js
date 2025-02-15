@@ -14,7 +14,7 @@ const Dashboard = ({ token }) => {
   return (
     <>
       <div className="home_container">
-        <Button onClick={() => fetchData("adminm")}>Ваши атаки</Button>
+        <Button onClick={() => fetchData("modified")}>Ваши атаки</Button>
         <Button onClick={() => fetchData("attack")}>Шаблоны атак</Button>
         <Button onClick={() => fetchData("background")}>Фоновый трафик</Button>
       </div>

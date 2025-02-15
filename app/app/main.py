@@ -93,6 +93,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
           
     return user
 
+# Ваши функции для получения файлов
+async def list_files_admin():
+    cursor = fsadmin.find()
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    return {"files": file_list}
+
+async def list_files_user():
+    cursor = fsuser.find()
+    file_list = []
+    async for file in cursor:
+        file_list.append({
+            "filename": file.filename,
+            "length": file.length,
+            "upload_date": file.upload_date,
+        })
+    return {"files": file_list}
+
 def role_checker(required_role: str):
     async def role_checker_inner(user: User = Depends(get_current_user)):
         if user.role != required_role:
@@ -369,6 +392,16 @@ async def list_files():
         })
     
     return {"files": file_list}
+
+# Объединенная функция для получения файлов в зависимости от роли
+@app.get("/modified", response_model=dict)
+async def get_files(user: User = Depends(get_current_user)):
+    if user.role == "admin":
+        return await list_files_admin()
+    elif user.role == "user":
+        return await list_files_user()
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role not recognized")
 
 # Удаляем файл
 @app.delete("/file/{filename}")
