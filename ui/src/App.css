@@ -42,6 +42,13 @@
   justify-content: center; /* Центрирование по горизонтали */
   align-items: center; /* Центрирование по вертикали */
   height: 100vh; /* Высота контейнера на всю высоту экрана */
+  width: 2000px;
+}
+
+.login_container {
+  display: flex;
+  align-items: center; /* Центрирование по вертикали */
+  height: 100vh;
 }
 
 .home_container {
