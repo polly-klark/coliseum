@@ -1,6 +1,6 @@
 import React from "react";
 import axios from "axios";
-import { Button } from "antd";
+import { Button, Divider } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 
 const Dashboard = ({ token }) => {
@@ -36,6 +36,7 @@ const Dashboard = ({ token }) => {
           Фоновый трафик
         </Button>
       </div>
+      <Divider />
       <div className="home_container">
         {data ? <div>{JSON.stringify(data)}</div> : <p>Нет данных</p>}
       </div>
