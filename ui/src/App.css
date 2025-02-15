@@ -44,6 +44,14 @@
   height: 100vh; /* Высота контейнера на всю высоту экрана */
 }
 
+.home_container {
+  display: flex;
+  justify-content: center; /* Центрирование по горизонтали */
+  gap: 20px;
+  align-items: center; /* Центрирование по вертикали */
+  height: 15vh; /* Высота контейнера на всю высоту экрана */
+}
+
 .form {
   display: flex;
   flex-direction: column; /* Вертикальное расположение элементов */
