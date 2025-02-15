@@ -15,14 +15,14 @@ const Dashboard = ({ token }) => {
     <>
       <div className="home_container">
         <Button
-          color="primary"
+          color="danger"
           variant="outlined"
           onClick={() => fetchData("modified")}
         >
           Ваши атаки
         </Button>
         <Button
-          color="danger"
+          color="primary"
           variant="outlined"
           onClick={() => fetchData("attack")}
         >

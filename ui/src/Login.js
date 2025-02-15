@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Button, Input } from "antd";
+import { Button, Input, Form, Checkbox } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
+
+const onFinishFailed = (errorInfo) => {
+  console.log("Failed:", errorInfo);
+};
 
 const Login = ({ setToken }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Предотвращаем перезагрузку страницы
+  const handleSubmit = async (values) => {
+    const { username, password } = values; // Извлекаем значения из объекта
     try {
       const response = await axios.post(
         "http://localhost:8000/login",
@@ -23,29 +27,67 @@ const Login = ({ setToken }) => {
   };
 
   return (
-    <div className="container">
-      <form className="form" onSubmit={handleSubmit}>
-        <Input
-          className="input"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-        />
-        <Input
-          className="input"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-        />
-        <div className="button-container">
-          {/* Добавляем htmlType="submit" */}
+    <div>
+      <Form
+        name="basic"
+        labelCol={{
+          span: 16,
+        }}
+        wrapperCol={{
+          span: 6,
+        }}
+        style={{
+          maxWidth: 800,
+        }}
+        initialValues={{
+          remember: false,
+        }}
+        onFinish={handleSubmit}
+        onFinishFailed={onFinishFailed}
+        autoComplete="off"
+      >
+        <Form.Item
+          label="Имя пользователя"
+          name="username"
+          rules={[
+            {
+              required: true,
+              message: "Введите имя пользователя!",
+            },
+          ]}
+        >
+          <Input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Пароль"
+          name="password"
+          rules={[
+            {
+              required: true,
+              message: "Введите пароль!",
+            },
+          ]}
+        >
+          <Input.Password
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Form.Item>
+
+        <Form.Item name="remember" valuePropName="checked" label={null}>
+          <Checkbox>Запомнить меня</Checkbox>
+        </Form.Item>
+
+        <Form.Item label={null}>
           <Button htmlType="submit" color="default" variant="solid">
             Войти
           </Button>
-        </div>
-      </form>
+        </Form.Item>
+      </Form>
     </div>
   );
 };

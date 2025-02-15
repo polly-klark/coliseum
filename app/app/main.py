@@ -408,13 +408,13 @@ async def get_files(user: User = Depends(get_current_user)):
 async def delete_file(filename: str):
     # Открываем поток для чтения файла из GridFS по имени
     try:
-        grid_out = await fs.open_download_stream_by_name(filename)
+        grid_out = await fsuser.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при удалении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
     
     # Удаляем файл по его ID
-    await fs.delete(grid_out._id)
+    await fsuser.delete(grid_out._id)
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
