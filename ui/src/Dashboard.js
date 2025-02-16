@@ -75,7 +75,7 @@ const Dashboard = ({ token }) => {
       <Divider />
       {/* Условный рендеринг таблиц */}
       {activeTable === "mod" && <ModTable data={data} />}
-      {activeTable === "attack" && <AttackTable data={data} user={user} />}
+      {activeTable === "attack" && <AttackTable data={data} user={user} token={token} fetchData={fetchData} />}
       {activeTable === "bg" && <BgTable data={data} user={user} token={token} fetchData={fetchData} />}
     </>
   );
