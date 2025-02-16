@@ -2,7 +2,7 @@ import React from "react";
 import axios from "axios";
 import { Button, Divider, Table, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
-import ModTable from "./ModTable";
+import ModTable from "./Tables/ModTable";
 
 
 const Dashboard = ({ token }) => {
