@@ -6,7 +6,6 @@ import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
 import BgTable from "./Tables/BgTable";
 
-
 const Dashboard = ({ token }) => {
   const [data, setData] = React.useState([]);
   const [activeTable, setActiveTable] = React.useState(null); // Состояние для активной таблицы
@@ -21,38 +20,42 @@ const Dashboard = ({ token }) => {
       setData([]); // В случае ошибки устанавливаем пустой массив
     }
   };
+
+  const handleButtonClick = (dir, table) => {
+    fetchData(dir); // Получаем данные
+    setActiveTable(table); // Устанавливаем активную таблицу
+  };
+
   return (
     <>
       <div className="home_container">
         <Button
           color="danger"
           variant="outlined"
-          onClick={() => fetchData("modified")}
+          onClick={() => handleButtonClick("modified", "mod")}
         >
           Ваши атаки
         </Button>
         <Button
           color="primary"
           variant="outlined"
-          onClick={() => fetchData("attack")}
+          onClick={() => handleButtonClick("attack", "attack")}
         >
           Шаблоны атак
         </Button>
         <Button
           color="purple"
           variant="outlined"
-          onClick={() => fetchData("background")}
+          onClick={() => handleButtonClick("background", "bg")}
         >
           Фоновый трафик
         </Button>
       </div>
       <Divider />
-      {/* <div className="home_container">
-        {data ? <div>{JSON.stringify(data)}</div> : <p>Нет данных</p>}
-      </div> */}
-      <ModTable data={data} />
-      <AttackTable data={data} />
-      <BgTable data={data} />
+      {/* Условный рендеринг таблиц */}
+      {activeTable === "mod" && <ModTable data={data} />}
+      {activeTable === "attack" && <AttackTable data={data} />}
+      {activeTable === "bg" && <BgTable data={data} />}
     </>
   );
 };
