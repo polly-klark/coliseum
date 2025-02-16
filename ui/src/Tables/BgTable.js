@@ -5,7 +5,7 @@ import "../App.css"; // Импорт вашего CSS файла
 
 const { Column } = Table;
 
-const BgTable = ({ data }) => {
+const BgTable = ({ data, user }) => {
   return (
     <Table dataSource={data} rowKey="filename">
       <Column
@@ -29,6 +29,7 @@ const BgTable = ({ data }) => {
         render={(_, record) => (
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
+            {user === "admin" && <a>Удалить</a>}
           </Space>
         )}
       />

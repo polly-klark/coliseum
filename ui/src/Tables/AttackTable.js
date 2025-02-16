@@ -5,7 +5,7 @@ import "../App.css"; // Импорт вашего CSS файла
 
 const { Column } = Table;
 
-const AttackTable = ({ data }) => {
+const AttackTable = ({ data, user }) => {
   return (
     <Table dataSource={data} rowKey="filename">
       <Column
@@ -30,6 +30,7 @@ const AttackTable = ({ data }) => {
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
             <a>Модифицировать</a>
+            {user === "admin" && <a>Удалить</a>}
           </Space>
         )}
       />
