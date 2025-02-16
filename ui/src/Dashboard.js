@@ -45,7 +45,7 @@ const Dashboard = ({ token }) => {
 
   return (
     <>
-      <header>Вы под пользователем {user ? user.toString() : "Загрузка..."}</header>
+      <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
       <div className="home_container">
         <Button
           color="danger"
