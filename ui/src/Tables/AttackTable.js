@@ -7,6 +7,7 @@ import axios from "axios";
 const { Column } = Table;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
+  
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 

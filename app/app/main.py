@@ -365,7 +365,7 @@ async def list_files():
     return file_list
 
 # Получаем список файлов админа
-@app.get("/adminm")
+@app.get("/admin")
 async def list_files():
     # Получаем курсор для всех файлов в GridFS
     cursor = fsadmin.find()
@@ -382,7 +382,7 @@ async def list_files():
     return {"files": file_list}
 
 # Получаем список файлов
-@app.get("/userm")
+@app.get("/user")
 async def list_files():
     # Получаем курсор для всех файлов в GridFS
     cursor = fsuser.find()
@@ -450,6 +450,34 @@ async def delete_file(filename: str):
     
     # Удаляем файл по его ID
     await fsb.delete(grid_out._id)
+    
+    return {"message": f"File '{filename}' is deleted successfully."}
+
+@app.delete("/user/{filename}")
+async def delete_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsuser.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при удалении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Удаляем файл по его ID
+    await fsuser.delete(grid_out._id)
+    
+    return {"message": f"File '{filename}' is deleted successfully."}
+
+@app.delete("/admin/{filename}")
+async def delete_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsadmin.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при удалении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Удаляем файл по его ID
+    await fsadmin.delete(grid_out._id)
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
