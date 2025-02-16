@@ -29,7 +29,6 @@ const BgTable = ({ data }) => {
         render={(_, record) => (
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
-            <a>Модифицировать</a>
           </Space>
         )}
       />

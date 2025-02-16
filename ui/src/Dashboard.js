@@ -9,6 +9,7 @@ import BgTable from "./Tables/BgTable";
 
 const Dashboard = ({ token }) => {
   const [data, setData] = React.useState([]);
+  const [activeTable, setActiveTable] = React.useState(null); // Состояние для активной таблицы
   const fetchData = async (dir) => {
     try {
       const response = await axios.get(`http://localhost:8000/${dir}`, {
