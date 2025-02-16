@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import axios from "axios";
-import { Button, Divider, Table, Space } from "antd";
+import { Button, Divider } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
 import BgTable from "./Tables/BgTable";
 
 const Dashboard = ({ token }) => {
+  const [user, setUser] = React.useState(null);
   const [data, setData] = React.useState([]);
   const [activeTable, setActiveTable] = React.useState(null); // Состояние для активной таблицы
   const fetchData = async (dir) => {
@@ -26,8 +27,25 @@ const Dashboard = ({ token }) => {
     setActiveTable(table); // Устанавливаем активную таблицу
   };
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8000/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(response.data); // Предполагается, что API возвращает объект с полем username
+      } catch (error) {
+        console.error("Ошибка при получении данных:", error);
+        setUser(null);
+      }
+    };
+
+    fetchUser(); // Вызываем функцию для получения данных о пользователе
+  }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
+
   return (
     <>
+      <header>Вы под пользователем {user ? user.toString() : "Загрузка..."}</header>
       <div className="home_container">
         <Button
           color="danger"

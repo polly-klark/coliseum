@@ -123,6 +123,11 @@ def role_checker(required_role: str):
         return user
     return role_checker_inner
 
+# Получение имени пользователя
+@app.get("/user")
+async def get_user(user: User = Depends(get_current_user)):
+    return user.username
+
 # Регистрация пользователя
 @app.post("/register")
 async def register(user: User):
