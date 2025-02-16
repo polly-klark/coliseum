@@ -9,6 +9,7 @@ import BgTable from "./Tables/BgTable";
 const Dashboard = ({ token }) => {
   const [user, setUser] = React.useState(null);
   const [data, setData] = React.useState([]);
+  const [header, setHeader] = React.useState("Нажмите на кнопку!")
   const [activeTable, setActiveTable] = React.useState(null); // Состояние для активной таблицы
   const fetchData = async (dir) => {
     try {
@@ -22,9 +23,10 @@ const Dashboard = ({ token }) => {
     }
   };
 
-  const handleButtonClick = (dir, table) => {
+  const handleButtonClick = (dir, table, type) => {
     fetchData(dir); // Получаем данные
     setActiveTable(table); // Устанавливаем активную таблицу
+    setHeader(type)
   };
 
   useEffect(() => {
@@ -50,30 +52,31 @@ const Dashboard = ({ token }) => {
         <Button
           color="danger"
           variant="outlined"
-          onClick={() => handleButtonClick("modified", "mod")}
+          onClick={() => handleButtonClick("modified", "mod", "Ваши атаки")}
         >
           Ваши атаки
         </Button>
         <Button
           color="primary"
           variant="outlined"
-          onClick={() => handleButtonClick("attack", "attack")}
+          onClick={() => handleButtonClick("attack", "attack", "Шаблоны атак")}
         >
           Шаблоны атак
         </Button>
         <Button
           color="purple"
           variant="outlined"
-          onClick={() => handleButtonClick("background", "bg")}
+          onClick={() => handleButtonClick("background", "bg", "Фоновый трафик")}
         >
           Фоновый трафик
         </Button>
       </div>
+      <p style={{ textAlign: 'center' }}>{header}</p>
       <Divider />
       {/* Условный рендеринг таблиц */}
       {activeTable === "mod" && <ModTable data={data} />}
       {activeTable === "attack" && <AttackTable data={data} user={user} />}
-      {activeTable === "bg" && <BgTable data={data} user={user} />}
+      {activeTable === "bg" && <BgTable data={data} user={user} token={token} fetchData={fetchData} />}
     </>
   );
 };

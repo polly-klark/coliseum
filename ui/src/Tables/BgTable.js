@@ -1,11 +1,31 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space } from "antd";
+import { Table, Space, message } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
+import axios from "axios";
 
 const { Column } = Table;
 
-const BgTable = ({ data, user }) => {
+const BgTable = ({ data, user, token, fetchData }) => {
+
+  const handleDelete = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+
+    try {
+      await axios.delete(`http://localhost:8000/background/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      message.success(`Файл "${filename}" успешно удален`);
+      // Вызываем fetchData для обновления данных
+    await fetchData("background"); // Дождитесь завершения fetchData
+    } catch (error) {
+      console.error("Ошибка при удалении файла:", error);
+      message.error(`Ошибка при удалении файла "${filename}"`);
+    }
+  };
+
   return (
     <Table dataSource={data} rowKey="filename">
       <Column
@@ -29,13 +49,19 @@ const BgTable = ({ data, user }) => {
         render={(_, record) => (
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
-            {user === "admin" && <a>Удалить</a>}
+            {user === "admin" && (
+              <a
+                href="#"
+                onClick={(event) => handleDelete(record.filename, event)}
+              >
+                {/* Предотвращаем переход по ссылке */}Удалить
+              </a>
+            )}
           </Space>
         )}
       />
     </Table>
   );
 };
-
 
 export default BgTable;
