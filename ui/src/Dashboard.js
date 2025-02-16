@@ -4,6 +4,7 @@ import { Button, Divider, Table, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
+import BgTable from "./Tables/BgTable";
 
 
 const Dashboard = ({ token }) => {
@@ -50,6 +51,7 @@ const Dashboard = ({ token }) => {
       </div> */}
       <ModTable data={data} />
       <AttackTable data={data} />
+      <BgTable data={data} />
     </>
   );
 };
