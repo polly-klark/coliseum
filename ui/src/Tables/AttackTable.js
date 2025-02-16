@@ -1,7 +1,7 @@
 import React from "react";
 import dayjs from "dayjs";
 import { Table, Space } from "antd";
-import "./App.css"; // Импорт вашего CSS файла
+import "../App.css"; // Импорт вашего CSS файла
 
 const { Column } = Table;
 
@@ -29,7 +29,7 @@ const AttackTable = ({ data }) => {
         render={(_, record) => (
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
-            <a>Удалить</a>
+            <a>Модифицировать</a>
           </Space>
         )}
       />

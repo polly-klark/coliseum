@@ -3,6 +3,7 @@ import axios from "axios";
 import { Button, Divider, Table, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
+import AttackTable from "./Tables/AttackTable";
 
 
 const Dashboard = ({ token }) => {
@@ -48,6 +49,7 @@ const Dashboard = ({ token }) => {
         {data ? <div>{JSON.stringify(data)}</div> : <p>Нет данных</p>}
       </div> */}
       <ModTable data={data} />
+      <AttackTable data={data} />
     </>
   );
 };

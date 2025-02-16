@@ -1,7 +1,7 @@
 import React from "react";
 import dayjs from "dayjs";
 import { Table, Space } from "antd";
-import "./App.css"; // Импорт вашего CSS файла
+import "../App.css"; // Импорт вашего CSS файла
 
 const { Column } = Table;
 
