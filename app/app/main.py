@@ -103,7 +103,7 @@ async def list_files_admin():
             "length": file.length,
             "upload_date": file.upload_date,
         })
-    return {"files": file_list}
+    return file_list
 
 async def list_files_user():
     cursor = fsuser.find()
@@ -114,7 +114,7 @@ async def list_files_user():
             "length": file.length,
             "upload_date": file.upload_date,
         })
-    return {"files": file_list}
+    return file_list
 
 def role_checker(required_role: str):
     async def role_checker_inner(user: User = Depends(get_current_user)):
@@ -260,7 +260,7 @@ async def list_files():
             "upload_date": file.upload_date,
         })
     
-    return {"files": file_list}
+    return file_list
 
 # Получаем выбранный файл атаки
 @app.get("/attack/{filename}")
@@ -357,7 +357,7 @@ async def list_files():
             "upload_date": file.upload_date,
         })
     
-    return {"files": file_list}
+    return file_list
 
 # Получаем список файлов админа
 @app.get("/adminm")
@@ -394,7 +394,7 @@ async def list_files():
     return {"files": file_list}
 
 # Объединенная функция для получения файлов в зависимости от роли
-@app.get("/modified", response_model=dict)
+@app.get("/modified", response_model=list)
 async def get_files(user: User = Depends(get_current_user)):
     if user.role == "admin":
         return await list_files_admin()

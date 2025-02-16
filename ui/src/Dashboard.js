@@ -1,15 +1,22 @@
 import React from "react";
 import axios from "axios";
-import { Button, Divider } from "antd";
+import { Button, Divider, Table, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
+import ModTable from "./ModTable";
+
 
 const Dashboard = ({ token }) => {
-  const [data, setData] = React.useState(null);
+  const [data, setData] = React.useState([]);
   const fetchData = async (dir) => {
-    const response = await axios.get(`http://localhost:8000/${dir}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setData(response.data);
+    try {
+      const response = await axios.get(`http://localhost:8000/${dir}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setData(response.data);
+    } catch (error) {
+      console.error("Ошибка при получении данных:", error);
+      setData([]); // В случае ошибки устанавливаем пустой массив
+    }
   };
   return (
     <>
@@ -37,9 +44,10 @@ const Dashboard = ({ token }) => {
         </Button>
       </div>
       <Divider />
-      <div className="home_container">
+      {/* <div className="home_container">
         {data ? <div>{JSON.stringify(data)}</div> : <p>Нет данных</p>}
-      </div>
+      </div> */}
+      <ModTable data={data} />
     </>
   );
 };

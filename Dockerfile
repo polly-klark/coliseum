@@ -31,7 +31,7 @@ RUN apt update && apt install -y mongodb-org
 # RUN mongorestore /dump
 # Устанавливаем зависимости React
 WORKDIR /ui
-RUN npm create vite ui && npm install axios react-router-dom && npm install && npm install antd --save 
+RUN npm create vite ui && npm install axios react-router-dom && npm install && npm install antd --save && npm install dayjs
 WORKDIR /app
 # Копируем код
 ADD ./develop.sh /opt
