@@ -7,7 +7,6 @@ import axios from "axios";
 const { Column } = Table;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
-  
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -25,6 +24,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       message.error(`Ошибка при удалении файла "${filename}"`);
     }
   };
+
+  const handleModification = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+
+    
+  }
 
   return (
     <Table dataSource={data} rowKey="filename">
@@ -49,7 +54,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         render={(_, record) => (
           <Space size="middle">
             <a>Запустить {record.lastName}</a>
-            <a>Модифицировать</a>
+            <a
+              href="#"
+              onClick={(event) => handleModification(record.filename, event)}
+            >
+              Модифицировать
+            </a>
             {user === "admin" && (
               <a
                 href="#"
