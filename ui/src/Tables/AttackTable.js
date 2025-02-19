@@ -7,8 +7,8 @@ import axios from "axios";
 const { Column } = Table;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
-  const [loading, setLoading] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  const [selectedFilename, setSelectedFilename] = React.useState('');
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -34,16 +34,15 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const handleModification = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     showModal();
+    setSelectedFilename(filename);
   };
-  const handleOk = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setOpen(false);
-    }, 3000);
+  const handleOk = (filename) => {
+    message.success(`Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`);
+    setOpen(false);
   };
   const handleCancel = () => {
     setOpen(false);
+    setSelectedFilename(''); // Очищаем имя файла при закрытии модального окна
   };
 
   return (
@@ -90,26 +89,16 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </Table>
       <Modal
         open={open}
-        title="Title"
+        title={"Модификация " + selectedFilename}
         onOk={handleOk}
         onCancel={handleCancel}
         footer={[
-          <Button key="back" onClick={handleCancel}>
-            Return
+          <Button key="back" color="cyan" variant="outlined" onClick={handleCancel}>
+            Отмена
           </Button>,
-          <Button key="submit" type="primary" loading={loading} onClick={handleOk}>
-            Submit
-          </Button>,
-          <Button
-            key="link"
-            href="https://google.com"
-            target="_blank"
-            type="primary"
-            loading={loading}
-            onClick={handleOk}
-          >
-            Search on Google
-          </Button>,
+          <Button key="submit" color="pink" variant="solid" onClick={() => handleOk(selectedFilename)}>
+            Модифицировать
+          </Button>
         ]}
       ></Modal>     
     </>
