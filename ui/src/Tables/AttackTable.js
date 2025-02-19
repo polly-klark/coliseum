@@ -93,7 +93,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       <Modal
         open={open}
         title={"Модификация " + selectedFilename}
-        onOk={() => handleMod(selectedFilename, ip_forward, ip_victim)}
         onCancel={handleCancel}
         footer={[
           <Button
@@ -110,12 +109,17 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             variant="solid"
             onClick={() => {
               // Используем validateFields для проверки полей перед вызовом handleMod
-              form.validateFields()
-                .then(values => {
-                  handleMod(selectedFilename, values.ipForward, values.ipVictim);
+              form
+                .validateFields()
+                .then((values) => {
+                  handleMod(
+                    selectedFilename,
+                    values.ipForward,
+                    values.ipVictim
+                  );
                 })
-                .catch(info => {
-                  console.log('Валидация не прошла:', info);
+                .catch((info) => {
+                  console.log("Валидация не прошла:", info);
                 });
             }}
           >
@@ -124,6 +128,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         ]}
       >
         <Form
+          form={form}
           name="modify"
           labelCol={{
             span: 8,
@@ -150,8 +155,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             ]}
           >
             <Input
-              value={ip_forward}
-              onChange={(e) => setIp_forward(e.target.value)}
+            // value={ip_forward}
+            // onChange={(e) => setIp_forward(e.target.value)}
             />
           </Form.Item>
           <Form.Item
@@ -165,8 +170,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             ]}
           >
             <Input
-              value={ip_victim}
-              onChange={(e) => setIp_victim(e.target.value)}
+            // value={ip_victim}
+            // onChange={(e) => setIp_victim(e.target.value)}
             />
           </Form.Item>
         </Form>
