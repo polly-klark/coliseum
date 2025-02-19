@@ -1,14 +1,16 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message, Modal, Form, Button } from "antd";
+import { Table, Space, message, Modal, Form, Button, Input } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
 const { Column } = Table;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
+  const [ip_forward, setIp_forward] = React.useState("");
+  const [ip_victim, setIp_victim] = React.useState("");
   const [open, setOpen] = React.useState(false);
-  const [selectedFilename, setSelectedFilename] = React.useState('');
+  const [selectedFilename, setSelectedFilename] = React.useState("");
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -27,22 +29,21 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     }
   };
 
-  const showModal = () => {
-    setOpen(true);
-  };
-
   const handleModification = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
-    showModal();
+    setOpen(true);
     setSelectedFilename(filename);
   };
-  const handleOk = (filename) => {
-    message.success(`Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`);
+  const handleMod = (filename, ip_forward, ip_victim) => {
+    message.success(
+      `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
+    );
     setOpen(false);
+    console.log(ip_forward, ip_victim);
   };
   const handleCancel = () => {
     setOpen(false);
-    setSelectedFilename(''); // Очищаем имя файла при закрытии модального окна
+    setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
   };
 
   return (
@@ -90,17 +91,75 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       <Modal
         open={open}
         title={"Модификация " + selectedFilename}
-        onOk={handleOk}
+        onOk={() => handleMod(selectedFilename, ip_forward, ip_victim)}
         onCancel={handleCancel}
         footer={[
-          <Button key="back" color="cyan" variant="outlined" onClick={handleCancel}>
+          <Button
+            key="back"
+            color="cyan"
+            variant="outlined"
+            onClick={handleCancel}
+          >
             Отмена
           </Button>,
-          <Button key="submit" color="pink" variant="solid" onClick={() => handleOk(selectedFilename)}>
+          <Button
+            key="submit"
+            color="pink"
+            variant="solid"
+            onClick={() => handleMod(selectedFilename, ip_forward, ip_victim)}
+          >
             Модифицировать
-          </Button>
+          </Button>,
         ]}
-      ></Modal>     
+      >
+        <Form
+          name="modify"
+          labelCol={{
+            span: 8,
+          }}
+          wrapperCol={{
+            span: 16,
+          }}
+          style={{
+            maxWidth: 600,
+          }}
+          initialValues={{
+            remember: false,
+          }}
+        >
+          <Form.Item
+            label="IP-адрес атакующего"
+            name="ip-forward"
+            rules={[
+              {
+                required: true,
+                message: "Введите IP-адрес атакующего!",
+              },
+            ]}
+          >
+            <Input
+              value={ip_forward}
+              onChange={(e) => setIp_forward(e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="IP-адрес жертвы"
+            name="ip-victim"
+            rules={[
+              {
+                required: true,
+                message: "Введите IP-адрес жертвы!",
+              },
+            ]}
+          >
+            <Input
+              value={ip_victim}
+              onChange={(e) => setIp_victim(e.target.value)}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };
