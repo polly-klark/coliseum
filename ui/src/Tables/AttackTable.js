@@ -13,9 +13,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [selectedFilename, setSelectedFilename] = React.useState("");
   // Создаем экземпляр формы
   const [form] = Form.useForm();
-  const initialValues = { // Задайте начальные значения
-    ipForward: '',
-    ipVictim: '',
+  const initialValues = {
+    // Задайте начальные значения
+    ipForward: "",
+    ipVictim: "",
   };
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -40,10 +41,27 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setOpen(true);
     setSelectedFilename(filename);
   };
-  const handleMod = (filename, ip_forward, ip_victim) => {
-    message.success(
-      `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
-    );
+  const handleMod = async (filename, ip_forward, ip_victim) => {
+    try {
+      await axios.post(
+        `http://localhost:8000/modification/${filename}`,
+        {
+          ip_forward: ip_forward,
+          ip_victim: ip_victim,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      message.success(
+        `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
+      );
+    } catch (error) {
+      console.error("Ошибка при модификации файла:", error);
+      message.error(`Ошибка при модификации файла "${filename}"`);
+    }
     setOpen(false);
     console.log(ip_forward, ip_victim);
     form.resetFields(); // Сбрасываем значения при открытии модального окна
@@ -136,7 +154,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         <Form
           form={form}
           name="modify"
-          initialValues={initialValues} 
+          initialValues={initialValues}
           labelCol={{
             span: 8,
           }}

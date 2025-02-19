@@ -7,6 +7,10 @@ class User(BaseModel):
     hashed_password: str
     role: str  # Добавляем поле для роли
 
+class ModificationRequest(BaseModel):
+    ip_forward: str
+    ip_victim: str
+
 def hash_password(password: str) -> str:
     password = password.encode('cp1251')
     return gostcrypto.gosthash.new('streebog256', data=password).hexdigest()

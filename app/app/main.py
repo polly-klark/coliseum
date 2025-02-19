@@ -6,7 +6,7 @@ import secrets, logging, tempfile, os
 from jose import JWTError, jwt 
 from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
-from models import User, hash_password, verify_password, rename_file, file_generator
+from models import User, hash_password, verify_password, rename_file, file_generator, ModificationRequest
 from fastapi.middleware.cors import CORSMiddleware
 
 # Настройка логирования
@@ -287,7 +287,10 @@ async def file_info(filename: str):
 
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
-async def file_modification(filename: str, ip_forward: str, ip_victim: str):
+async def file_modification(filename: str, request_data: ModificationRequest):
+    ip_forward = request_data.ip_forward
+    ip_victim = request_data.ip_victim
+    logger.info(f"Получены данные: filename: {filename}, ip_forward: {ip_forward}, ip_victim: {ip_victim}")
     # Открываем поток для чтения файла из GridFS по имени
     try:
         grid_out = await fsa.open_download_stream_by_name(filename)
