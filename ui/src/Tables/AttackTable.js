@@ -13,6 +13,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [selectedFilename, setSelectedFilename] = React.useState("");
   // Создаем экземпляр формы
   const [form] = Form.useForm();
+  const initialValues = { // Задайте начальные значения
+    ipForward: '',
+    ipVictim: '',
+  };
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -42,10 +46,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     );
     setOpen(false);
     console.log(ip_forward, ip_victim);
+    form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
   const handleCancel = () => {
     setOpen(false);
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
+    form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
 
   return (
@@ -130,6 +136,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         <Form
           form={form}
           name="modify"
+          initialValues={initialValues} 
           labelCol={{
             span: 8,
           }}
@@ -138,9 +145,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           }}
           style={{
             maxWidth: 600,
-          }}
-          initialValues={{
-            remember: false,
           }}
           autoComplete="off"
         >
@@ -154,10 +158,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
               },
             ]}
           >
-            <Input
-            // value={ip_forward}
-            // onChange={(e) => setIp_forward(e.target.value)}
-            />
+            <Input />
           </Form.Item>
           <Form.Item
             label="IP-адрес жертвы"
@@ -169,10 +170,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
               },
             ]}
           >
-            <Input
-            // value={ip_victim}
-            // onChange={(e) => setIp_victim(e.target.value)}
-            />
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
