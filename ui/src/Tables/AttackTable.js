@@ -11,6 +11,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [ip_victim, setIp_victim] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [selectedFilename, setSelectedFilename] = React.useState("");
+  // Создаем экземпляр формы
+  const [form] = Form.useForm();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -106,7 +108,16 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             key="submit"
             color="pink"
             variant="solid"
-            onClick={() => handleMod(selectedFilename, ip_forward, ip_victim)}
+            onClick={() => {
+              // Используем validateFields для проверки полей перед вызовом handleMod
+              form.validateFields()
+                .then(values => {
+                  handleMod(selectedFilename, values.ipForward, values.ipVictim);
+                })
+                .catch(info => {
+                  console.log('Валидация не прошла:', info);
+                });
+            }}
           >
             Модифицировать
           </Button>,
@@ -126,10 +137,11 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           initialValues={{
             remember: false,
           }}
+          autoComplete="off"
         >
           <Form.Item
             label="IP-адрес атакующего"
-            name="ip-forward"
+            name="ipForward"
             rules={[
               {
                 required: true,
@@ -142,10 +154,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
               onChange={(e) => setIp_forward(e.target.value)}
             />
           </Form.Item>
-
           <Form.Item
             label="IP-адрес жертвы"
-            name="ip-victim"
+            name="ipVictim"
             rules={[
               {
                 required: true,
