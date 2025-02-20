@@ -9,8 +9,9 @@ import BgTable from "./Tables/BgTable";
 const Dashboard = ({ token }) => {
   const [user, setUser] = React.useState(null);
   const [data, setData] = React.useState([]);
-  const [header, setHeader] = React.useState("Нажмите на кнопку!")
+  const [header, setHeader] = React.useState("Нажмите на кнопку!");
   const [activeTable, setActiveTable] = React.useState(null); // Состояние для активной таблицы
+  const [content, setContent] = React.useState(null); // Храним содержимое для отображения
   const fetchData = async (dir) => {
     try {
       const response = await axios.get(`http://localhost:8000/${dir}`, {
@@ -26,7 +27,19 @@ const Dashboard = ({ token }) => {
   const handleButtonClick = (dir, table, type) => {
     fetchData(dir); // Получаем данные
     setActiveTable(table); // Устанавливаем активную таблицу
-    setHeader(type)
+    setHeader(type);
+    if (data.length > 0) {
+      setContent(
+        <ModTable data={data} user={user} token={token} fetchData={fetchData} />
+      );
+    } else {
+      setContent(
+        <div>
+          <p>У вас пока нет атак</p>
+        </div>
+      );
+    }
+    console.log({content})
   };
 
   useEffect(() => {
@@ -44,6 +57,9 @@ const Dashboard = ({ token }) => {
 
     fetchUser(); // Вызываем функцию для получения данных о пользователе
   }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
+
+  let content1;
+  content1 = <p>Какой-то контент</p>;
 
   return (
     <>
@@ -66,17 +82,28 @@ const Dashboard = ({ token }) => {
         <Button
           color="purple"
           variant="outlined"
-          onClick={() => handleButtonClick("background", "bg", "Фоновый трафик")}
+          onClick={() =>
+            handleButtonClick("background", "bg", "Фоновый трафик")
+          }
         >
           Фоновый трафик
         </Button>
       </div>
-      <p style={{ textAlign: 'center' }}>{header}</p>
+      <p style={{ textAlign: "center" }}>{header}</p>
       <Divider />
       {/* Условный рендеринг таблиц */}
-      {activeTable === "mod" && <ModTable data={data} user={user} token={token} fetchData={fetchData} />}
-      {activeTable === "attack" && <AttackTable data={data} user={user} token={token} fetchData={fetchData} />}
-      {activeTable === "bg" && <BgTable data={data} user={user} token={token} fetchData={fetchData} />}
+      {activeTable === "mod" && content}
+      {activeTable === "attack" && (
+        <AttackTable
+          data={data}
+          user={user}
+          token={token}
+          fetchData={fetchData}
+        />
+      )}
+      {activeTable === "bg" && (
+        <BgTable data={data} user={user} token={token} fetchData={fetchData} />
+      )}
     </>
   );
 };
