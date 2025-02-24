@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Button, Divider } from "antd";
+import { Button, Divider, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
@@ -34,9 +34,9 @@ const Dashboard = ({ token }) => {
     if (activeTable === "mod" && data.length > 0) {
       // Обновляем содержимое после загрузки данных для "Ваши атаки"
       // Однако, в данном случае мы используем условный рендеринг вместо content
-      console.log("Effect")
+      console.log("Effect");
     }
-    console.log("Effect1")
+    console.log("Effect1");
   }, [data, activeTable]); // Обновляем при изменении данных или активной таблицы
 
   useEffect(() => {
@@ -51,7 +51,7 @@ const Dashboard = ({ token }) => {
         setUser(null);
       }
     };
-    console.log("Effect2")
+    console.log("Effect2");
     fetchUser(); // Вызываем функцию для получения данных о пользователе
   }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
 
@@ -89,7 +89,31 @@ const Dashboard = ({ token }) => {
       {activeTable === "mod" && data.length > 0 ? (
         <ModTable data={data} user={user} token={token} fetchData={fetchData} />
       ) : activeTable === "mod" ? (
-        <p>У вас пока нет атак</p>
+        <div className="centered">
+          <Space
+            direction="vertical"
+            size="middle"
+            style={{
+              display: "flex",
+            }}
+          >
+            <div className="centered">
+              <p>У вас пока нет атак.</p>
+              <p>Хотите создать из предложенных?</p>
+            </div>
+            <div className="centered">
+              <Button
+                color="primary"
+                variant="solid"
+                onClick={() =>
+                  handleButtonClick("attack", "attack", "Шаблоны атак")
+                }
+              >
+                Да!
+              </Button>
+            </div>
+          </Space>
+        </div>
       ) : null}
       {activeTable === "attack" && (
         <AttackTable
