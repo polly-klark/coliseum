@@ -19,7 +19,6 @@ const Dashboard = ({ token }) => {
     name: "file",
     multiple: true,
     action: '',
-    fileList: [],
     onChange(info) {
       const { status } = info.file;
       if (status !== "uploading") {
@@ -27,14 +26,8 @@ const Dashboard = ({ token }) => {
       }
       if (status === "done") {
         message.success(`${info.file.name} file uploaded successfully.`);
-        setProps(prevProps => ({ ...prevProps, fileList: [...prevProps.fileList, info.file] }));
       } else if (status === "error") {
         message.error(`${info.file.name} file upload failed.`);
-      } else if (status === "removed") {
-        setProps(prevProps => ({
-          ...prevProps,
-          fileList: prevProps.fileList.filter(file => file.uid !== info.file.uid),
-        }))
       }
     },
     onDrop(e) {
@@ -46,7 +39,6 @@ const Dashboard = ({ token }) => {
   };
   const handleCancel = () => {
     setOpen(false);
-    setProps(prevProps => ({ ...prevProps, fileList: [] }));
   };
 
   const fetchData = async (dir) => {
@@ -70,7 +62,6 @@ const Dashboard = ({ token }) => {
   const handleModalSumbit = async (dir) => {
     await fetchData(dir)
     setOpen(false);
-    setProps(prevProps => ({ ...prevProps, fileList: [] }));
   }
 
   useEffect(() => {
