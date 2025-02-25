@@ -36,7 +36,6 @@ const Dashboard = ({ token }) => {
   });
   const handleUploadModal = () => {
     setOpen(true);
-    console.log(open);
   };
   const handleCancel = () => {
     setOpen(false);
@@ -59,6 +58,11 @@ const Dashboard = ({ token }) => {
     setActiveTable(table); // Устанавливаем активную таблицу
     setHeader(type);
   };
+
+  const handleModalSumbit = async (dir) => {
+    await fetchData(dir)
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (activeTable === "mod" && data.length > 0) {
@@ -190,7 +194,7 @@ const Dashboard = ({ token }) => {
             key="sumbit"
             color="pink"
             variant="solid"
-            onClick={handleCancel}
+            onClick={() => handleModalSumbit(activeTable)}
           >
             Загрузить
           </Button>,
