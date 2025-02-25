@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Button, Divider, Space } from "antd";
+import { Button, Divider, Modal, Space } from "antd";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
@@ -11,6 +11,14 @@ const Dashboard = ({ token }) => {
   const [data, setData] = useState([]);
   const [header, setHeader] = useState("Нажмите на кнопку!");
   const [activeTable, setActiveTable] = useState(null); // Состояние для активной таблицы
+  const [open, setOpen] = useState(false);
+  const handleUploadModal = () => {
+    setOpen(true);
+    console.log(open);
+  };
+  const handleCancel = () => {
+    setOpen(false);
+  };
 
   const fetchData = async (dir) => {
     try {
@@ -126,6 +134,39 @@ const Dashboard = ({ token }) => {
       {activeTable === "bg" && (
         <BgTable data={data} user={user} token={token} fetchData={fetchData} />
       )}
+      {user === "admin" &&
+        (activeTable === "bg" || activeTable === "attack") && (
+          <div className="centered">
+            <Button color="default" variant="solid" onClick={handleUploadModal}>
+              Загрузить
+            </Button>
+          </div>
+        )}
+      <Modal
+        open={open}
+        title={"Загрузка в " + header}
+        onCancel={handleCancel}
+        footer={[
+          <Button
+            key="back"
+            color="cyan"
+            variant="outlined"
+            onClick={handleCancel}
+          >
+            Отмена
+          </Button>,
+          <Button
+            key="sumbit"
+            color="pink"
+            variant="solid"
+            onClick={handleCancel}
+          >
+            Загрузить
+          </Button>,
+        ]}
+      >
+        <div>Здесь будет содержимое модального окна</div>
+      </Modal>
     </>
   );
 };
