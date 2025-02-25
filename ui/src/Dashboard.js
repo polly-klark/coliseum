@@ -93,7 +93,7 @@ const Dashboard = ({ token }) => {
   useEffect(() => {
     if (activeTable === 'attack') {
       setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/attack/upload' }));
-    } else if (activeTable === 'bg') {
+    } else if (activeTable === 'background') {
       setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/background/upload' }));
     }
   }, [activeTable]);
@@ -120,7 +120,7 @@ const Dashboard = ({ token }) => {
           color="purple"
           variant="outlined"
           onClick={() =>
-            handleButtonClick("background", "bg", "Фоновый трафик")
+            handleButtonClick("background", "background", "Фоновый трафик")
           }
         >
           Фоновый трафик
@@ -166,11 +166,11 @@ const Dashboard = ({ token }) => {
           fetchData={fetchData}
         />
       )}
-      {activeTable === "bg" && (
+      {activeTable === "background" && (
         <BgTable data={data} user={user} token={token} fetchData={fetchData} />
       )}
       {user === "admin" &&
-        (activeTable === "bg" || activeTable === "attack") && (
+        (activeTable === "background" || activeTable === "attack") && (
           <div className="centered">
             <Button color="default" variant="solid" onClick={handleUploadModal}>
               Загрузить
