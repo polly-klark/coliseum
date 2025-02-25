@@ -37,8 +37,9 @@ const Dashboard = ({ token }) => {
   const handleUploadModal = () => {
     setOpen(true);
   };
-  const handleCancel = () => {
+  const handleCancel = async (dir) => {
     setOpen(false);
+    await fetchData(dir);
   };
 
   const fetchData = async (dir) => {
@@ -60,7 +61,7 @@ const Dashboard = ({ token }) => {
   };
 
   const handleModalSumbit = async (dir) => {
-    await fetchData(dir)
+    await fetchData(dir);
     setOpen(false);
   }
 
@@ -180,25 +181,24 @@ const Dashboard = ({ token }) => {
       <Modal
         open={open}
         title={"Загрузка в " + header}
-        onCancel={handleCancel}
-        footer={[
-          <Button
-            key="back"
-            color="cyan"
-            variant="outlined"
-            onClick={handleCancel}
-          >
-            Отмена
-          </Button>,
+        onCancel={() => handleCancel(activeTable)}
+        footer={
+          // <Button
+          //   key="back"
+          //   color="cyan"
+          //   variant="outlined"
+          //   onClick={handleCancel}
+          // >
+          //   Отмена
+          // </Button>,
           <Button
             key="sumbit"
-            color="pink"
-            variant="solid"
+            type="primary"
             onClick={() => handleModalSumbit(activeTable)}
           >
             Загрузить
-          </Button>,
-        ]}
+          </Button>
+        }
       >
         <div>
           <Dragger {...props}>
