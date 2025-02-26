@@ -29,6 +29,7 @@ const Dashboard = ({ token }) => {
       } else if (status === "error") {
         message.error(`${info.file.name} file upload failed.`);
       }
+      console.log(info.fileList);
     },
     onDrop(e) {
       console.log("Dropped files", e.dataTransfer.files);
@@ -69,9 +70,7 @@ const Dashboard = ({ token }) => {
     if (activeTable === "mod" && data.length > 0) {
       // Обновляем содержимое после загрузки данных для "Ваши атаки"
       // Однако, в данном случае мы используем условный рендеринг вместо content
-      console.log("Effect");
     }
-    console.log("Effect1");
   }, [data, activeTable]); // Обновляем при изменении данных или активной таблицы
 
   useEffect(() => {
@@ -86,7 +85,6 @@ const Dashboard = ({ token }) => {
         setUser(null);
       }
     };
-    console.log("Effect2");
     fetchUser(); // Вызываем функцию для получения данных о пользователе
   }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
 
