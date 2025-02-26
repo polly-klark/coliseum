@@ -25,6 +25,11 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
+  const handlePlay = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+    console.log(`Проигрывается файл ${filename}`);
+  };
+
   return (
     <Table dataSource={data} rowKey="filename">
       <Column
@@ -47,7 +52,9 @@ const ModTable = ({ data, user, token, fetchData }) => {
         key="action"
         render={(_, record) => (
           <Space size="middle">
-            <a>Запустить {record.lastName}</a>
+            <a href="#" onClick={(event) => handlePlay(record.filename, event)}>
+              Запустить
+            </a>
             <a
               href="#"
               onClick={(event) => handleDelete(record.filename, event)}

@@ -18,6 +18,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     ipForward: "",
     ipVictim: "",
   };
+
+  const handlePlay = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+    console.log(`Проигрывается файл ${filename}`);
+  };
+
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -95,7 +101,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           key="action"
           render={(_, record) => (
             <Space size="middle">
-              <a>Запустить {record.lastName}</a>
+              <a
+                href="#"
+                onClick={(event) => handlePlay(record.filename, event)}
+              >
+                Запустить
+              </a>
               <a
                 href="#"
                 onClick={(event) => handleModification(record.filename, event)}

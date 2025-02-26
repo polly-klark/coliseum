@@ -7,23 +7,27 @@ import axios from "axios";
 const { Column } = Table;
 
 const BgTable = ({ data, user, token, fetchData }) => {
-
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
     try {
       await axios.delete(`http://localhost:8000/background/${filename}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       message.success(`Файл "${filename}" успешно удален`);
       // Вызываем fetchData для обновления данных
-    await fetchData("background"); // Дождитесь завершения fetchData
+      await fetchData("background"); // Дождитесь завершения fetchData
     } catch (error) {
       console.error("Ошибка при удалении файла:", error);
       message.error(`Ошибка при удалении файла "${filename}"`);
     }
+  };
+
+  const handlePlay = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+    console.log(`Проигрывается файл ${filename}`);
   };
 
   return (
@@ -48,7 +52,9 @@ const BgTable = ({ data, user, token, fetchData }) => {
         key="action"
         render={(_, record) => (
           <Space size="middle">
-            <a>Запустить {record.lastName}</a>
+            <a href="#" onClick={(event) => handlePlay(record.filename, event)}>
+              Запустить
+            </a>
             {user === "admin" && (
               <a
                 href="#"
