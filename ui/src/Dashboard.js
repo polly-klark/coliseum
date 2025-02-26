@@ -31,10 +31,10 @@ const Dashboard = ({ token }) => {
       .then((res) => res.json())
       .then(() => {
         setFileList([]);
-        message.success("upload successfully.");
+        message.success(`Файл успешно загружен!`);
       })
       .catch(() => {
-        message.error("upload failed.");
+        message.error("Загрузка не удалась!");
       })
       .finally(() => {
         setUploading(false);
@@ -214,7 +214,7 @@ const Dashboard = ({ token }) => {
             disabled={fileList.length === 0}
             loading={uploading}
           >
-            {uploading ? "Uploading" : "Start Upload"}
+            {uploading ? "Загрузка" : "Начать загрузку"}
           </Button>
         }
       >

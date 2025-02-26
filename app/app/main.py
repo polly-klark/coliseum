@@ -200,13 +200,11 @@ async def upload_file(file: UploadFile = File(...)):
 # Загружаем файл атаки
 @app.post("/attack/upload")
 async def upload_file(file: UploadFile = File(...)):
-    logger.info(f"Сейчас я попробую загрузить файл {file.filename}")
     if file.filename == '':
         raise HTTPException(status_code = 400, detail = "File has not name")
 
     # Сохраняем файл в GridFS
     try:
-        logger.info(f"Сейчас я попробую загрузить файл {file.filename}")
         # Открываем поток для записи в GridFS
         async with fsa.open_upload_stream(file.filename) as grid_in:
             while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
