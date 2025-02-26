@@ -17,28 +17,32 @@ const Dashboard = ({ token }) => {
   const [open, setOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const handleUpload = (dir) => {
+  const handleUpload = async (dir) => {
     const formData = new FormData();
     fileList.forEach((file) => {
-      formData.append('files[]', file);
+      formData.append("files[]", file);
     });
     setUploading(true);
     // You can use any AJAX library you like
     fetch(`http://localhost:8000/${dir}/upload`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     })
       .then((res) => res.json())
       .then(() => {
         setFileList([]);
-        message.success('upload successfully.');
+        message.success("upload successfully.");
       })
       .catch(() => {
-        message.error('upload failed.');
+        message.error("upload failed.");
       })
       .finally(() => {
         setUploading(false);
       });
+    await fetchData(dir);
+    setTimeout(() => {
+      setOpen(false);
+    }, 3000);
   };
   const props = {
     onRemove: (file) => {
@@ -78,11 +82,6 @@ const Dashboard = ({ token }) => {
     setActiveTable(table); // Устанавливаем активную таблицу
     setHeader(type);
   };
-
-  const handleModalSumbit = async (dir) => {
-    await fetchData(dir);
-    setOpen(false);
-  }
 
   useEffect(() => {
     if (activeTable === "mod" && data.length > 0) {
@@ -210,11 +209,11 @@ const Dashboard = ({ token }) => {
           <Button
             key="sumbit"
             type="primary"
-            onClick={() => handleModalSumbit(activeTable)}
+            onClick={() => handleUpload(activeTable)}
             disabled={fileList.length === 0}
             loading={uploading}
           >
-            {uploading ? 'Uploading' : 'Start Upload'}
+            {uploading ? "Uploading" : "Start Upload"}
           </Button>
         }
       >
