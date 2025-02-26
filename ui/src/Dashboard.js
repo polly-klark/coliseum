@@ -20,7 +20,7 @@ const Dashboard = ({ token }) => {
   const handleUpload = async (dir) => {
     const formData = new FormData();
     fileList.forEach((file) => {
-      formData.append("files[]", file);
+      formData.append("file", file);
     });
     setUploading(true);
     // You can use any AJAX library you like
@@ -39,10 +39,11 @@ const Dashboard = ({ token }) => {
       .finally(() => {
         setUploading(false);
       });
-    await fetchData(dir);
-    setTimeout(() => {
+    console.log(dir)
+    setTimeout( async () => {
+      await fetchData(dir);
       setOpen(false);
-    }, 3000);
+    }, 1000);
   };
   const props = {
     onRemove: (file) => {
