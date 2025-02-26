@@ -15,26 +15,44 @@ const Dashboard = ({ token }) => {
   const [header, setHeader] = useState("Нажмите на кнопку!");
   const [activeTable, setActiveTable] = useState(null); // Состояние для активной таблицы
   const [open, setOpen] = useState(false);
-  const [props, setProps] = useState({
-    name: "file",
-    multiple: true,
-    action: '',
-    onChange(info) {
-      const { status } = info.file;
-      if (status !== "uploading") {
-        console.log(info.file, info.fileList);
-      }
-      if (status === "done") {
-        message.success(`${info.file.name} file uploaded successfully.`);
-      } else if (status === "error") {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-      console.log(info.fileList);
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const handleUpload = (dir) => {
+    const formData = new FormData();
+    fileList.forEach((file) => {
+      formData.append('files[]', file);
+    });
+    setUploading(true);
+    // You can use any AJAX library you like
+    fetch(`http://localhost:8000/${dir}/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setFileList([]);
+        message.success('upload successfully.');
+      })
+      .catch(() => {
+        message.error('upload failed.');
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+  };
+  const props = {
+    onRemove: (file) => {
+      const index = fileList.indexOf(file);
+      const newFileList = fileList.slice();
+      newFileList.splice(index, 1);
+      setFileList(newFileList);
     },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
+    beforeUpload: (file) => {
+      setFileList([...fileList, file]);
+      return false;
     },
-  });
+    fileList,
+  };
   const handleUploadModal = () => {
     setOpen(true);
   };
@@ -89,13 +107,13 @@ const Dashboard = ({ token }) => {
   }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
 
   // Обновляем action в зависимости от activeTable
-  useEffect(() => {
-    if (activeTable === 'attack') {
-      setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/attack/upload' }));
-    } else if (activeTable === 'background') {
-      setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/background/upload' }));
-    }
-  }, [activeTable]);
+  // useEffect(() => {
+  //   if (activeTable === 'attack') {
+  //     setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/attack/upload' }));
+  //   } else if (activeTable === 'background') {
+  //     setProps(prevProps => ({ ...prevProps, action: 'http://localhost:8000/background/upload' }));
+  //   }
+  // }, [activeTable]);
 
   return (
     <>
@@ -193,8 +211,10 @@ const Dashboard = ({ token }) => {
             key="sumbit"
             type="primary"
             onClick={() => handleModalSumbit(activeTable)}
+            disabled={fileList.length === 0}
+            loading={uploading}
           >
-            Загрузить
+            {uploading ? 'Uploading' : 'Start Upload'}
           </Button>
         }
       >
