@@ -486,8 +486,22 @@ async def delete_file(filename: str):
 
 # Прокси
 @app.post("/proxy/{filename}")
-async def get_filename(filename: str):
+async def send_file(filename: str):
     logger.info(f"Передаю файл {filename} для запуска")
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:
+        response = requests.post("http://localhost:9000/receive_file", data=filename)             
+        # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при передаче файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     return filename
 
 # Запуск сервера (это можно сделать через командную строку)
