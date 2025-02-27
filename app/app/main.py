@@ -485,7 +485,7 @@ async def delete_file(filename: str):
     return {"message": f"File '{filename}' is deleted successfully."}
 
 # Прокси
-@app.get("/proxy/{filename}")
+@app.post("/proxy/{filename}")
 async def get_filename(filename: str):
     logger.info(f"Передаю файл {filename} для запуска")
     return filename
