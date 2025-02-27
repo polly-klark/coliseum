@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
-import secrets, logging, tempfile, os
+import secrets, logging, tempfile, os, requests
 from jose import JWTError, jwt 
 from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
