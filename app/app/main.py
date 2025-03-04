@@ -23,6 +23,8 @@ origins = [
     # Добавьте другие домены, если необходимо
 ]
 
+origins = ["*"]
+
 # Добавление CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -485,24 +487,25 @@ async def delete_file(filename: str):
     return {"message": f"File '{filename}' is deleted successfully."}
 
 # Прокси
-@app.post("/proxy/{filename}")
+@app.get("/proxy/{filename}")
 async def send_file(filename: str):
     logger.info(f"Передаю файл {filename} для запуска")
     # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fs.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
+    # try:
+    #     grid_out = await fs.open_download_stream_by_name(filename)
+    # except Exception as e:
+    #     logger.error(f"Ошибка при получении файла: {str(e)}")
+    #     raise HTTPException(status_code=404, detail="File not found")
 
     try:
-        response = requests.post("http://localhost:9000/receive_file", data=filename)             
+        response = requests.get("http://10.33.102.155:9000/receive_file", data=filename)             
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
         logger.error(f"Ошибка при передаче файла: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     return filename
+    
 
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload
