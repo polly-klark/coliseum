@@ -1,7 +1,8 @@
 import os, tempfile, logging
 from subprocess import check_output
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 app = FastAPI()
 
@@ -24,9 +25,10 @@ app.add_middleware(
 )
 
 # Создаем генератор для чтения файла по частям
-async def file_generator(grid_out):
+async def file_generator(request):
+    # stream = request.stream()  # Если stream — это функция
     while True:
-        chunk = await grid_out.read(1024)  # Читаем файл порциями по 1024 байта
+        chunk = await request.stream.read(1024)  # Читаем файл порциями по 1024 байта
         if not chunk:
             break
         yield chunk
@@ -39,7 +41,10 @@ logger = logging.getLogger(__name__)
 async def get_hello():
     return("Hello world!")
 
-@app.get("/receive_file")
-async def get_file(filename):
+@app.post("/receive_file")
+async def receive_file(request: Request):
+    file_generator(request)
+    filename = request.headers.get("Content-Disposition")
     logger.info(f"Получаю файл {filename} для запуска")
-    return filename
+    # return StreamingResponse(file_generator(request), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return {"message": f"File {filename} received successfully"}

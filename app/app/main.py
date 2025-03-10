@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
-import secrets, logging, tempfile, os, requests
+import secrets, logging, tempfile, os, requests, httpx
 from jose import JWTError, jwt 
 from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
@@ -487,24 +487,33 @@ async def delete_file(filename: str):
     return {"message": f"File '{filename}' is deleted successfully."}
 
 # Прокси
-@app.get("/proxy/{filename}")
+@app.post("/proxy/{filename}")
 async def send_file(filename: str):
     logger.info(f"Передаю файл {filename} для запуска")
     # Открываем поток для чтения файла из GridFS по имени
-    # try:
-    #     grid_out = await fs.open_download_stream_by_name(filename)
-    # except Exception as e:
-    #     logger.error(f"Ошибка при получении файла: {str(e)}")
-    #     raise HTTPException(status_code=404, detail="File not found")
+    try:
+        grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
 
     try:
-        response = requests.get("http://10.33.102.155:9000/receive_file", data=filename)             
+
+        async def file_stream():
+            async for chunk in file_generator(grid_out):
+                yield chunk
+
+        async with httpx.AsyncClient() as client:
+            headers = {
+            "Content-Disposition": f"attachment; filename={filename}",
+            }
+            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
         logger.error(f"Ошибка при передаче файла: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    return filename
+    return response.text
     
 
 # Запуск сервера (это можно сделать через командную строку)
