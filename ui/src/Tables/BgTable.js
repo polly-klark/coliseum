@@ -1,13 +1,13 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message } from "antd";
+import { Table, Space, message, Button } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
 const { Column } = Table;
 
 const BgTable = ({ data, user, token, fetchData }) => {
-  const [stopFilename, setStopFilename] = React.useState("ничего")
+  const [stopFilename, setStopFilename] = React.useState("ничего");
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -29,7 +29,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
-    setStopFilename(filename)
+    setStopFilename(filename);
     try {
       await axios.post(`http://localhost:8000/play_background/${filename}`, {
         headers: {
@@ -45,7 +45,11 @@ const BgTable = ({ data, user, token, fetchData }) => {
 
   return (
     <>
-      <p>Сейчас проигрывается {stopFilename}</p>
+      <Space>
+        <p>Сейчас проигрывается {stopFilename}</p>
+        {stopFilename !== "ничего" && <Button>Остановить</Button>}
+        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
+      </Space>
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"
