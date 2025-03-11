@@ -1,8 +1,11 @@
-import os, tempfile, logging
-from subprocess import check_output
+import os, tempfile, logging, subprocess
 from fastapi import FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from subprocess import check_output
+
+def get_pid(name):
+    return check_output(["pidof",name])
 
 app = FastAPI()
 
@@ -48,5 +51,6 @@ async def receive_file(request: Request):
             raise HTTPException(status_code=500, detail="Internal Server Error")
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
+    process = subprocess.run(['tcpreplay', '-i', 'ens33', filename])
     # return StreamingResponse(file_generator(request), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
     return {"message": f"File {filename} received successfully"}
