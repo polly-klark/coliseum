@@ -42,12 +42,15 @@ const BgTable = ({ data, user, token, fetchData }) => {
       message.error(`Ошибка при передаче файла "${filename}"`);
     }
   };
+  const handleStop = async (filename) => {
+    console.log(filename)
+  }
 
   return (
     <>
       <Space>
         <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && <Button>Остановить</Button>}
+        {stopFilename !== "ничего" && <Button onClick={() => handleStop(stopFilename)}>Остановить</Button>}
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
       </Space>
       <Table dataSource={data} rowKey="filename">
