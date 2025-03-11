@@ -64,9 +64,10 @@ async def receive_file(request: Request):
         logger.info(f"Я сейчас перед тру")
         try:
             logger.info(f"Я сейчас в тру")
+            stream = await request.stream()
             # Читаем данные из GridFS и записываем их во временный файл
             while True:
-                chunk = request.read(1024)  # Читаем порциями по 1024 байта
+                chunk = await stream.read(1024)  # Читаем порциями по 1024 байта
                 if not chunk:
                     break
                 temp_file.write(chunk)
