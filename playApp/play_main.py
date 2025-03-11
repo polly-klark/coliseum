@@ -64,12 +64,7 @@ async def receive_file(request: Request):
         logger.info(f"Я сейчас перед тру")
         try:
             logger.info(f"Я сейчас в тру")
-            stream = await request.stream()
-            # Читаем данные из GridFS и записываем их во временный файл
-            while True:
-                chunk = await stream.read(1024)  # Читаем порциями по 1024 байта
-                if not chunk:
-                    break
+            async for chunk in request.stream():
                 temp_file.write(chunk)
 
             temp_file_path = temp_file.name  # Сохраняем имя временного файла
@@ -78,7 +73,7 @@ async def receive_file(request: Request):
         except Exception as e:
             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
-    filename = request.headers.get("Content-Disposition")
+    filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
     # return StreamingResponse(file_generator(request), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
     return {"message": f"File {filename} received successfully"}

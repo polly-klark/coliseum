@@ -505,7 +505,7 @@ async def send_file(filename: str):
 
         async with httpx.AsyncClient() as client:
             headers = {
-            "Content-Disposition": f"attachment; filename={filename}",
+            "filename": filename,
             }
             response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
