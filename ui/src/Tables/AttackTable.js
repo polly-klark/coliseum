@@ -23,7 +23,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
     try {
-      await axios.post(`http://localhost:8000/proxy/${filename}`, {
+      await axios.post(`http://localhost:8000/play_attack/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

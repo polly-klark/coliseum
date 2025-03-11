@@ -28,6 +28,17 @@ const BgTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    try {
+      await axios.post(`http://localhost:8000/play_background/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      message.success(`Файл "${filename}" успешно передан на запуск`);
+    } catch (error) {
+      console.error("Ошибка при передаче файла:", error);
+      message.error(`Ошибка при передаче файла "${filename}"`);
+    }
   };
 
   return (

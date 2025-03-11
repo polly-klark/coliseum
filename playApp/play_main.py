@@ -1,6 +1,6 @@
 import os, tempfile, logging
 from subprocess import check_output
-from fastapi import FastAPI, UploadFile, File, Request, HTTPException
+from fastapi import FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -23,31 +23,7 @@ app.add_middleware(
     allow_methods=["*"],  # Разрешенные методы (GET, POST и т.д.)
     allow_headers=["*"],  # Разрешенные заголовки
 )
-
-# Создаем генератор для чтения файла по частям
-# async def file_generator(request):
-#     # stream = request.stream()  # Если stream — это функция
-#     # Создаем временный файл для сохранения содержимого
-#     logger.info(f"Я сейчас в файловом генераторе")
-#     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-#         logger.info(f"Я сейчас перед тру")
-#         try:
-#             logger.info(f"Я сейчас в тру")
-#             # Читаем данные из GridFS и записываем их во временный файл
-#             while True:
-#                 chunk = request.stream.read(1024)  # Читаем порциями по 1024 байта
-#                 if not chunk:
-#                     break
-#                 temp_file.write(chunk)
-
-#             temp_file_path = temp_file.name  # Сохраняем имя временного файла
-#             logger.info(f"Файл находится в {temp_file_path}")
-            
-#         except Exception as e:
-#             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
-#             raise HTTPException(status_code=500, detail="Internal Server Error")
         
-
 # Настройка логирования
 logging.basicConfig(filename='playApp.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
