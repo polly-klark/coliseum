@@ -7,6 +7,7 @@ import axios from "axios";
 const { Column } = Table;
 
 const BgTable = ({ data, user, token, fetchData }) => {
+  const [stopFilename, setStopFilename] = React.useState("ничего")
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -28,6 +29,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    setStopFilename(filename)
     try {
       await axios.post(`http://localhost:8000/play_background/${filename}`, {
         headers: {
@@ -42,42 +44,48 @@ const BgTable = ({ data, user, token, fetchData }) => {
   };
 
   return (
-    <Table dataSource={data} rowKey="filename">
-      <Column
-        title="№ п/п"
-        key="number"
-        render={(text, record, index) => index + 1}
-      />
-      <Column title="Имя файла" dataIndex="filename" key="filename" />
-      <Column title="Размер файла" dataIndex="length" key="length" />
-      <Column
-        title="Дата загрузки"
-        dataIndex="upload_date"
-        key="upload_date"
-        render={(text, record) =>
-          dayjs(record.upload_date).format("DD.MM.YYYY HH:mm")
-        }
-      />
-      <Column
-        title="Действие"
-        key="action"
-        render={(_, record) => (
-          <Space size="middle">
-            <a href="#" onClick={(event) => handlePlay(record.filename, event)}>
-              Запустить
-            </a>
-            {user === "admin" && (
+    <>
+      <p>Сейчас проигрывается {stopFilename}</p>
+      <Table dataSource={data} rowKey="filename">
+        <Column
+          title="№ п/п"
+          key="number"
+          render={(text, record, index) => index + 1}
+        />
+        <Column title="Имя файла" dataIndex="filename" key="filename" />
+        <Column title="Размер файла" dataIndex="length" key="length" />
+        <Column
+          title="Дата загрузки"
+          dataIndex="upload_date"
+          key="upload_date"
+          render={(text, record) =>
+            dayjs(record.upload_date).format("DD.MM.YYYY HH:mm")
+          }
+        />
+        <Column
+          title="Действие"
+          key="action"
+          render={(_, record) => (
+            <Space size="middle">
               <a
                 href="#"
-                onClick={(event) => handleDelete(record.filename, event)}
+                onClick={(event) => handlePlay(record.filename, event)}
               >
-                {/* Предотвращаем переход по ссылке */}Удалить
+                Запустить
               </a>
-            )}
-          </Space>
-        )}
-      />
-    </Table>
+              {user === "admin" && (
+                <a
+                  href="#"
+                  onClick={(event) => handleDelete(record.filename, event)}
+                >
+                  {/* Предотвращаем переход по ссылке */}Удалить
+                </a>
+              )}
+            </Space>
+          )}
+        />
+      </Table>
+    </>
   );
 };
 

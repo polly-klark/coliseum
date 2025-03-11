@@ -7,6 +7,7 @@ import axios from "axios";
 const { Column } = Table;
 
 const ModTable = ({ data, user, token, fetchData }) => {
+  const [stopFilename, setStopFilename] = React.useState("ничего")
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -28,6 +29,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
   const handleUserPlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    setStopFilename(filename)
     try {
       await axios.post(`http://localhost:8000/play_usermod/${filename}`, {
         headers: {
@@ -44,6 +46,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
   const handleAdminPlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    setStopFilename(filename)
     try {
       await axios.post(`http://localhost:8000/play_adminmod/${filename}`, {
         headers: {
@@ -58,53 +61,56 @@ const ModTable = ({ data, user, token, fetchData }) => {
   };
 
   return (
-    <Table dataSource={data} rowKey="filename">
-      <Column
-        title="№ п/п"
-        key="number"
-        render={(text, record, index) => index + 1}
-      />
-      <Column title="Имя файла" dataIndex="filename" key="filename" />
-      <Column title="Размер файла" dataIndex="length" key="length" />
-      <Column
-        title="Дата загрузки"
-        dataIndex="upload_date"
-        key="upload_date"
-        render={(text, record) =>
-          dayjs(record.upload_date).format("DD.MM.YYYY HH:mm")
-        }
-      />
-      <Column
-        title="Действие"
-        key="action"
-        render={(_, record) => (
-          <Space size="middle">
-            {user === "admin" && (
+    <>
+      <p>Сейчас проигрывается {stopFilename}</p>
+      <Table dataSource={data} rowKey="filename">
+        <Column
+          title="№ п/п"
+          key="number"
+          render={(text, record, index) => index + 1}
+        />
+        <Column title="Имя файла" dataIndex="filename" key="filename" />
+        <Column title="Размер файла" dataIndex="length" key="length" />
+        <Column
+          title="Дата загрузки"
+          dataIndex="upload_date"
+          key="upload_date"
+          render={(text, record) =>
+            dayjs(record.upload_date).format("DD.MM.YYYY HH:mm")
+          }
+        />
+        <Column
+          title="Действие"
+          key="action"
+          render={(_, record) => (
+            <Space size="middle">
+              {user === "admin" && (
+                <a
+                  href="#"
+                  onClick={(event) => handleAdminPlay(record.filename, event)}
+                >
+                  Запустить
+                </a>
+              )}
+              {user === "user" && (
+                <a
+                  href="#"
+                  onClick={(event) => handleUserPlay(record.filename, event)}
+                >
+                  Запустить
+                </a>
+              )}
               <a
                 href="#"
-                onClick={(event) => handleAdminPlay(record.filename, event)}
+                onClick={(event) => handleDelete(record.filename, event)}
               >
-                Запустить
+                Удалить
               </a>
-            )}
-            {user === "user" && (
-              <a
-                href="#"
-                onClick={(event) => handleUserPlay(record.filename, event)}
-              >
-                Запустить
-              </a>
-            )}
-            <a
-              href="#"
-              onClick={(event) => handleDelete(record.filename, event)}
-            >
-              Удалить
-            </a>
-          </Space>
-        )}
-      />
-    </Table>
+            </Space>
+          )}
+        />
+      </Table>
+    </>
   );
 };
 
