@@ -11,6 +11,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [ip_victim, setIp_victim] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [selectedFilename, setSelectedFilename] = React.useState("");
+  const [stopFilename, setStopFilename] = React.useState("ничего")
   // Создаем экземпляр формы
   const [form] = Form.useForm();
   const initialValues = {
@@ -22,6 +23,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    setStopFilename(filename)
     try {
       await axios.post(`http://localhost:8000/play_attack/${filename}`, {
         headers: {
@@ -91,6 +93,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
 
   return (
     <>
+      <p>Сейчас проигрывается {stopFilename}</p>
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"
