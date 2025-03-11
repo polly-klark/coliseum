@@ -35,11 +35,8 @@ async def get_hello():
 @app.post("/receive_file")
 async def receive_file(request: Request):
     # Создаем временный файл для сохранения содержимого
-    logger.info(f"Я сейчас в файловом генераторе")
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        logger.info(f"Я сейчас перед тру")
         try:
-            logger.info(f"Я сейчас в тру")
             async for chunk in request.stream():
                 temp_file.write(chunk)
 

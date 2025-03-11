@@ -25,9 +25,36 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
-  const handlePlay = async (filename, event) => {
+  const handleUserPlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
+    try {
+      await axios.post(`http://localhost:8000/play_usermod/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      message.success(`Файл "${filename}" успешно передан на запуск`);
+    } catch (error) {
+      console.error("Ошибка при передаче файла:", error);
+      message.error(`Ошибка при передаче файла "${filename}"`);
+    }
+  };
+
+  const handleAdminPlay = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке
+    console.log(`Проигрывается файл ${filename}`);
+    try {
+      await axios.post(`http://localhost:8000/play_adminmod/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      message.success(`Файл "${filename}" успешно передан на запуск`);
+    } catch (error) {
+      console.error("Ошибка при передаче файла:", error);
+      message.error(`Ошибка при передаче файла "${filename}"`);
+    }
   };
 
   return (
@@ -52,9 +79,22 @@ const ModTable = ({ data, user, token, fetchData }) => {
         key="action"
         render={(_, record) => (
           <Space size="middle">
-            <a href="#" onClick={(event) => handlePlay(record.filename, event)}>
-              Запустить
-            </a>
+            {user === "admin" && (
+              <a
+                href="#"
+                onClick={(event) => handleAdminPlay(record.filename, event)}
+              >
+                Запустить
+              </a>
+            )}
+            {user === "user" && (
+              <a
+                href="#"
+                onClick={(event) => handleUserPlay(record.filename, event)}
+              >
+                Запустить
+              </a>
+            )}
             <a
               href="#"
               onClick={(event) => handleDelete(record.filename, event)}
