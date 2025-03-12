@@ -59,7 +59,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
       message.error(`Ошибка при передаче файла "${filename}"`);
     }
   };
-  const handleStop = async (filename) => {
+  const handleStop = async () => {
     console.log(filename)
   }
 
@@ -67,7 +67,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     <>
       <Space>
         <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && (<Button onClick={() => handleStop(stopFilename)}>Остановить</Button>)}
+        {stopFilename !== "ничего" && (<Button onClick={() => handleStop()}>Остановить</Button>)}
         {stopFilename === "ничего" && (<Button disabled>Остановить</Button>)}
       </Space>
       <Table dataSource={data} rowKey="filename">

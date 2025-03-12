@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess
+import os, tempfile, logging, subprocess, psutil
 from fastapi import FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -54,3 +54,13 @@ async def receive_file(request: Request):
     process = subprocess.run(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
     # return StreamingResponse(file_generator(request), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
     return {"message": f"File {filename} received successfully"}
+
+@app.get("/stop")
+async def stop():
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == 'tcpreplay':
+            try:
+                proc.terminate()
+                print(f"Процесс остановлен")
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                print(f"Ошибка при остановке процесса")
