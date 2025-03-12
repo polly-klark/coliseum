@@ -60,7 +60,13 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
   const handleStop = async () => {
-    console.log(filename)
+    try {
+      await axios.get(`http://localhost:8000/stop`);
+      message.success(`Процесс успешно остановлен`);
+    } catch (error) {
+      console.error("Ошибка при остановке:", error);
+      message.error(`Ошибка при остановке`);
+    }
   }
 
   return (

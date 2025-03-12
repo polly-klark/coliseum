@@ -61,6 +61,7 @@ async def stop():
         if proc.info['name'] == 'tcpreplay':
             try:
                 proc.terminate()
-                print(f"Процесс остановлен")
+                mes = "Процесс остановлен"
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                print(f"Ошибка при остановке процесса")
+                mes = "Ошибка при остановке процесса"
+    return mes

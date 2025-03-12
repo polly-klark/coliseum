@@ -90,15 +90,21 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
-  const handleStop = async (filename) => {
-    console.log(filename)
+  const handleStop = async () => {
+    try {
+      await axios.get(`http://localhost:8000/stop`);
+      message.success(`Процесс успешно остановлен`);
+    } catch (error) {
+      console.error("Ошибка при остановке:", error);
+      message.error(`Ошибка при остановке`);
+    }
   }
 
   return (
     <>
       <Space>
         <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && <Button onClick={() => handleStop(stopFilename)}>Остановить</Button>}
+        {stopFilename !== "ничего" && <Button onClick={() => handleStop()}>Остановить</Button>}
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
       </Space>
       <Table dataSource={data} rowKey="filename">
