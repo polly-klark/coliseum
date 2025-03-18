@@ -51,8 +51,12 @@ async def receive_file(request: Request):
             raise HTTPException(status_code=500, detail="Internal Server Error")
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
-    process = subprocess.run(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
-    # return StreamingResponse(file_generator(request), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+    try:
+        process = subprocess.run(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+    finally:
+        # Удаление файла после выполнения команды
+        os.remove(temp_file_path)
+        logger.info(f"Файл {temp_file_path} удален")
     return {"message": f"File {filename} received successfully"}
 
 @app.get("/stop")

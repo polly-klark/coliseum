@@ -7,8 +7,6 @@ import axios from "axios";
 const { Column } = Table;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
-  const [ip_forward, setIp_forward] = React.useState("");
-  const [ip_victim, setIp_victim] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
