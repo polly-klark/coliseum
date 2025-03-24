@@ -44,7 +44,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
   };
   const handleStop = async () => {
     try {
-      await axios.get(`http://localhost:8000/stop`);
+      await axios.post(`http://localhost:8000/stop`);
       message.success(`Процесс успешно остановлен`);
     } catch (error) {
       console.error("Ошибка при остановке:", error);

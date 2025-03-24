@@ -10,11 +10,11 @@ def get_pid(name):
 app = FastAPI()
 
 # Укажите разрешенные источники
-origins = [
-    "http://localhost:8000",  # ваш React фронтенд
-    "http://127.0.0.1:8000",
-    # Добавьте другие домены, если необходимо
-]
+# origins = [
+#     "http://localhost:8000",  # ваш React фронтенд
+#     "http://127.0.0.1:8000",
+#     # Добавьте другие домены, если необходимо
+# ]
 
 origins = ["*"]
 
@@ -59,13 +59,17 @@ async def receive_file(request: Request):
         logger.info(f"Файл {temp_file_path} удален")
     return {"message": f"File {filename} received successfully"}
 
-@app.get("/stop")
+@app.post("/stop")
 async def stop():
+    logger.info("Щас как остановлю")
+    mes = "Процесса нет"
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] == 'tcpreplay':
+            logger.info("Процесс есть")
             try:
                 proc.terminate()
                 mes = "Процесс остановлен"
+                logger.info("Процесс остановлен")
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 mes = "Ошибка при остановке процесса"
-    return mes
+    return {"message": f"{mes}"}
