@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess, psutil
+import os, tempfile, logging, subprocess, psutil, redis
 from fastapi import FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
