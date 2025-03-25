@@ -9,6 +9,9 @@ def get_pid(name):
 
 app = FastAPI()
 
+# Подключение к Redis
+r = redis.Redis(host='localhost', port=6379, db=0)
+
 # Укажите разрешенные источники
 # origins = [
 #     "http://localhost:8000",  # ваш React фронтенд
@@ -53,6 +56,9 @@ async def receive_file(request: Request):
     logger.info(f"Получаю файл {filename} для запуска")
     try:
         process = subprocess.run(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+        pid = process.pid
+        r.set('tcpreplay:pid', pid)
+
     finally:
         # Удаление файла после выполнения команды
         os.remove(temp_file_path)
@@ -62,14 +68,10 @@ async def receive_file(request: Request):
 @app.post("/stop")
 async def stop():
     logger.info("Щас как остановлю")
-    mes = "Процесса нет"
-    for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == 'tcpreplay':
-            logger.info("Процесс есть")
-            try:
-                proc.terminate()
-                mes = "Процесс остановлен"
-                logger.info("Процесс остановлен")
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                mes = "Ошибка при остановке процесса"
+    pid = r.get('tcpreplay:pid')
+    try:
+        process = psutil.Process(pid)
+        process.terminate()
+    except psutil.NoSuchProcess:
+        print(f"Процесс {pid} не найден")
     return {"message": f"{mes}"}
