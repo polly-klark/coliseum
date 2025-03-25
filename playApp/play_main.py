@@ -55,7 +55,7 @@ async def receive_file(request: Request):
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
     try:
-        process = subprocess.run(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+        process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
         pid = process.pid
         r.set('tcpreplay:pid', pid)
 
@@ -69,9 +69,10 @@ async def receive_file(request: Request):
 async def stop():
     logger.info("Щас как остановлю")
     pid = r.get('tcpreplay:pid')
+    mes = "Всё хорошо"
     try:
         process = psutil.Process(pid)
         process.terminate()
     except psutil.NoSuchProcess:
-        print(f"Процесс {pid} не найден")
+        mes = f"Процесс {pid} не найден"
     return {"message": f"{mes}"}
