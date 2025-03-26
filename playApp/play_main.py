@@ -1,5 +1,5 @@
 import os, tempfile, logging, subprocess, psutil, redis
-from fastapi import FastAPI, File, Request, HTTPException
+from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from subprocess import check_output
@@ -34,12 +34,22 @@ app.add_middleware(
 logging.basicConfig(filename='playApp.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def run_tcpreplay(temp_file_path: str):
+    process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+    pid = process.pid
+    r.set('tcpreplay:pid', pid)
+
+    # finally:
+    #     # Удаление файла после выполнения команды
+    #     os.remove(temp_file_path)
+    #     logger.info(f"Файл {temp_file_path} удален")
+
 @app.get("/hello")
 async def get_hello():
     return("Hello world!")
 
 @app.post("/receive_file")
-async def receive_file(request: Request):
+async def receive_file(request: Request, background_tasks: BackgroundTasks):
     # Создаем временный файл для сохранения содержимого
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         try:
@@ -54,21 +64,15 @@ async def receive_file(request: Request):
             raise HTTPException(status_code=500, detail="Internal Server Error")
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
-    try:
-        process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
-        pid = process.pid
-        r.set('tcpreplay:pid', pid)
-
-    finally:
-        # Удаление файла после выполнения команды
-        os.remove(temp_file_path)
-        logger.info(f"Файл {temp_file_path} удален")
+    # Запуск процесса в фоновом режиме
+    background_tasks.add_task(run_tcpreplay, temp_file_path)
     return {"message": f"File {filename} received successfully"}
 
 @app.post("/stop")
 async def stop():
     logger.info("Щас как остановлю")
     pid = r.get('tcpreplay:pid')
+    pid = int(pid.decode('utf-8'))
     mes = "Всё хорошо"
     try:
         process = psutil.Process(pid)
