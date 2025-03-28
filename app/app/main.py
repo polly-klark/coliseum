@@ -287,6 +287,11 @@ async def file_info(filename: str):
     
     return {"file": file_info}
 
+@app.get("/modification_list/{filemname}")
+async def ip_list(filename: str):
+    analyzer = PcapAnalyzer(filename)
+    return analyzer.ips
+
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
 async def file_modification(filename: str, request_data: ModificationRequest):

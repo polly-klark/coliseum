@@ -5,6 +5,7 @@ from scapy.all import PcapReader, IP
 class PcapAnalyzer:
     def init(self, filename):
         self.filename = filename
+        self.ips = set()
         self._process_packets()
 
     def _process_packets(self):
@@ -12,8 +13,8 @@ class PcapAnalyzer:
         with PcapReader(self.filename) as reader:
             for packet in reader:
                 if packet.haslayer(IP):
-                    self.src_ips.add(packet[IP].src)
-                    self.dst_ips.add(packet[IP].dst)
+                    self.ips.add(packet[IP].src)
+                    self.ips.add(packet[IP].dst)
 
 # Модель пользователя
 class User(BaseModel):
