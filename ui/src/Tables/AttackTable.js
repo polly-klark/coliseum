@@ -22,6 +22,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
   const [activeRows, setActiveRows] = React.useState({});
+  const [inputValues, setInputValues] = React.useState({});
   // Создаем экземпляр формы
   const [form] = Form.useForm();
   // const initialValues = {
@@ -36,6 +37,23 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       ...prev,
       [key]: !prev[key], // Переключение состояния
     }));
+  };
+
+  // Обработчик изменения Input
+  const handleInputChange = (key, value) => {
+    setInputValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Получение активных строк при нажатии кнопки
+  const getActiveRows = () => {
+    const result = Object.keys(activeRows)
+      .filter((key) => activeRows[key])
+      .map((key) => ({
+        key,
+        ip: inputValues[key] || fileData.find((item) => item.key === key).ip,
+      }));
+    console.log("Активные строки:", result);
+    return result;
   };
 
   // Определение колонок таблицы
@@ -69,6 +87,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       render: (_, record) => (
         <Input
           disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
+          value={inputValues[record.key] || ""}
+          onChange={(e) => handleInputChange(record.key, e.target.value)}
           placeholder="Введите данные"
         />
       ),
@@ -115,11 +135,14 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setOpen(true);
     setSelectedFilename(filename);
     try {
-      const response = await axios.get(`http://localhost:8000/modification_list/${filename}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `http://localhost:8000/modification_list/${filename}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setFileData(response.data);
-      console.log(response.data)
+      console.log(response.data);
     } catch (error) {
       console.error("Ошибка при получении данных:", error);
       setFileData([]); // В случае ошибки устанавливаем пустой массив
@@ -255,13 +278,16 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           >
             Модифицировать
           </Button>,
+          <Button key="test" type="primary" onClick={getActiveRows}>
+            Получить активные строки
+          </Button>,
         ]}
       >
-        <Table 
-      dataSource={fileData} 
-      columns={columns} 
-      rowKey="key" // Уникальный ключ строки
-    />
+        <Table
+          dataSource={fileData}
+          columns={columns}
+          rowKey="key" // Уникальный ключ строки
+        />
       </Modal>
     </>
   );
