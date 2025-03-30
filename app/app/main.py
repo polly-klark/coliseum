@@ -347,43 +347,46 @@ async def file_modification(filename: str, request_data: ModificationRequest):
     if changed_ips:
         try:
             analyzer = PcapAnalyzer(temp_file_path)
+            packets = scapy.rdpcap(temp_file_path)
             sorted_ips = analyzer.get_sorted_ips()  # Получение отсортированного списка IP
             for item in changed_ips:
                 key = int(item.key) - 1   # Получение значения ключа
                 old_ip = sorted_ips[key]  # Получение старого IP из списка
                 new_ip = item.ip    # Получение IP-адреса
-                logger.info(f"Получены данные: key: {key}, old_ip: {old_ip}, new_ip: {new_ip}")
-    #     for packet in packets:
-    #         if packet.haslayer(scapy.IP):
-    #             packet["IP"].src = ip_forward
-    #             packet["IP"].dst = ip_victim
-    #             del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
-    #             del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
-    #             packet = scapy.Ether(packet.build())
+                for packet in packets:
+                    if packet.haslayer(scapy.IP):
+                        if packet["IP"].src == old_ip:
+                            packet["IP"].src = new_ip
+                        if packet["IP"].dst == old_ip:
+                            packet["IP"].dst = new_ip
+            for packet in packets:
+                del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
+                del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
+                packet = scapy.Ether(packet.build())
 
-    #     # Создаем новый временный файл для сохранения измененных пакетов
-    #     modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
-    #     scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
-    #     new_filename = rename_file(filename)
+            # Создаем новый временный файл для сохранения измененных пакетов
+            modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
+            scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
+            new_filename = rename_file(filename)
    
-    #     # Загружаем измененный файл в GridFS
-    #     with open(modified_temp_file_path, 'rb') as f:
-    #         await fsadmin.upload_from_stream(new_filename, f)
-            
-    #     # Загружаем измененный файл в GridFS
-    #     with open(modified_temp_file_path, 'rb') as f:
-    #         await fsuser.upload_from_stream(new_filename, f)
+            # Загружаем измененный файл в GridFS
+            with open(modified_temp_file_path, 'rb') as f:
+                await fsadmin.upload_from_stream(new_filename, f)
+                
+            # Загружаем измененный файл в GridFS
+            with open(modified_temp_file_path, 'rb') as f:
+                await fsuser.upload_from_stream(new_filename, f)
 
         except Exception as e:
             logger.error(f"Ошибка при обработке пакетов: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # finally:
-    #     # Удаляем временные файлы после завершения обработки запроса
-    #     if os.path.exists(temp_file_path):
-    #         os.remove(temp_file_path)
-    #     if os.path.exists(modified_temp_file_path):
-    #         os.remove(modified_temp_file_path)
+        finally:
+            # Удаляем временные файлы после завершения обработки запроса
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+            if os.path.exists(modified_temp_file_path):
+                os.remove(modified_temp_file_path)
 
     return {"message": f"File '{filename}' modified and uploaded successfully."}
 
