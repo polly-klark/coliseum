@@ -22,9 +22,12 @@ class User(BaseModel):
     hashed_password: str
     role: str  # Добавляем поле для роли
 
+class IpPair(BaseModel):
+    key: str
+    ip: str
+
 class ModificationRequest(BaseModel):
-    ip_forward: str
-    ip_victim: str
+     items: list[IpPair]
 
 def hash_password(password: str) -> str:
     password = password.encode('cp1251')

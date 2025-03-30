@@ -45,7 +45,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
 
   // Получение активных строк при нажатии кнопки
-  const getActiveRows = () => {
+  const getActiveRows = async (filename) => {
     const result = Object.keys(activeRows)
       .filter((key) => activeRows[key])
       .map((key) => ({
@@ -53,7 +53,26 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         ip: inputValues[key] || fileData.find((item) => item.key === key).ip,
       }));
     console.log("Активные строки:", result);
-    return result;
+    try {
+      await axios.post(
+        `http://localhost:8000/modification/${filename}`,
+        {
+          items: result,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      message.success(
+        `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
+      );
+    } catch (error) {
+      console.error("Ошибка при модификации файла:", error);
+      message.error(`Ошибка при модификации файла "${filename}"`);
+    }
+    setOpen(false);
   };
 
   // Определение колонок таблицы
@@ -148,31 +167,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       setFileData([]); // В случае ошибки устанавливаем пустой массив
     }
   };
-  const handleMod = async (filename, ip_forward, ip_victim) => {
-    try {
-      await axios.post(
-        `http://localhost:8000/modification/${filename}`,
-        {
-          ip_forward: ip_forward,
-          ip_victim: ip_victim,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      message.success(
-        `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
-      );
-    } catch (error) {
-      console.error("Ошибка при модификации файла:", error);
-      message.error(`Ошибка при модификации файла "${filename}"`);
-    }
-    setOpen(false);
-    console.log(ip_forward, ip_victim);
-    form.resetFields(); // Сбрасываем значения при открытии модального окна
-  };
+
   const handleCancel = () => {
     setOpen(false);
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
@@ -260,26 +255,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             key="submit"
             color="pink"
             variant="solid"
-            onClick={() => {
-              // Используем validateFields для проверки полей перед вызовом handleMod
-              form
-                .validateFields()
-                .then((values) => {
-                  handleMod(
-                    selectedFilename,
-                    values.ipForward,
-                    values.ipVictim
-                  );
-                })
-                .catch((info) => {
-                  console.log("Валидация не прошла:", info);
-                });
-            }}
+            onClick={() => getActiveRows(selectedFilename)}
           >
             Модифицировать
-          </Button>,
-          <Button key="test" type="primary" onClick={getActiveRows}>
-            Получить активные строки
           </Button>,
         ]}
       >

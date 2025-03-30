@@ -318,66 +318,65 @@ async def ip_list(filename: str):
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
 async def file_modification(filename: str, request_data: ModificationRequest):
-    ip_forward = request_data.ip_forward
-    ip_victim = request_data.ip_victim
-    logger.info(f"Получены данные: filename: {filename}, ip_forward: {ip_forward}, ip_victim: {ip_victim}")
+    changed_ips = request_data.items
+    logger.info(f"Получены данные: filename: {filename}, items: {changed_ips}")
     # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fsa.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
+    # try:
+    #     grid_out = await fsa.open_download_stream_by_name(filename)
+    # except Exception as e:
+    #     logger.error(f"Ошибка при получении файла: {str(e)}")
+    #     raise HTTPException(status_code=404, detail="File not found")
 
-    # Создаем временный файл для сохранения содержимого
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        try:
-            # Читаем данные из GridFS и записываем их во временный файл
-            while True:
-                chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
-                if not chunk:
-                    break
-                temp_file.write(chunk)
+    # # Создаем временный файл для сохранения содержимого
+    # with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    #     try:
+    #         # Читаем данные из GridFS и записываем их во временный файл
+    #         while True:
+    #             chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
+    #             if not chunk:
+    #                 break
+    #             temp_file.write(chunk)
 
-            temp_file_path = temp_file.name  # Сохраняем имя временного файла
+    #         temp_file_path = temp_file.name  # Сохраняем имя временного файла
 
-        except Exception as e:
-            logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
-            raise HTTPException(status_code=500, detail="Internal Server Error")
+    #     except Exception as e:
+    #         logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
+    #         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # Реализуем изменение IP
-    try:
-        packets = scapy.rdpcap(temp_file_path)  # Читаем пакеты из временного файла
-        for packet in packets:
-            if packet.haslayer(scapy.IP):
-                packet["IP"].src = ip_forward
-                packet["IP"].dst = ip_victim
-                del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
-                del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
-                packet = scapy.Ether(packet.build())
+    # # Реализуем изменение IP
+    # try:
+    #     packets = scapy.rdpcap(temp_file_path)  # Читаем пакеты из временного файла
+    #     for packet in packets:
+    #         if packet.haslayer(scapy.IP):
+    #             packet["IP"].src = ip_forward
+    #             packet["IP"].dst = ip_victim
+    #             del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
+    #             del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
+    #             packet = scapy.Ether(packet.build())
 
-        # Создаем новый временный файл для сохранения измененных пакетов
-        modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
-        scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
-        new_filename = rename_file(filename)
+    #     # Создаем новый временный файл для сохранения измененных пакетов
+    #     modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
+    #     scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
+    #     new_filename = rename_file(filename)
    
-        # Загружаем измененный файл в GridFS
-        with open(modified_temp_file_path, 'rb') as f:
-            await fsadmin.upload_from_stream(new_filename, f)
+    #     # Загружаем измененный файл в GridFS
+    #     with open(modified_temp_file_path, 'rb') as f:
+    #         await fsadmin.upload_from_stream(new_filename, f)
             
-        # Загружаем измененный файл в GridFS
-        with open(modified_temp_file_path, 'rb') as f:
-            await fsuser.upload_from_stream(new_filename, f)
+    #     # Загружаем измененный файл в GridFS
+    #     with open(modified_temp_file_path, 'rb') as f:
+    #         await fsuser.upload_from_stream(new_filename, f)
 
-    except Exception as e:
-        logger.error(f"Ошибка при обработке пакетов: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    # except Exception as e:
+    #     logger.error(f"Ошибка при обработке пакетов: {str(e)}")
+    #     raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    finally:
-        # Удаляем временные файлы после завершения обработки запроса
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-        if os.path.exists(modified_temp_file_path):
-            os.remove(modified_temp_file_path)
+    # finally:
+    #     # Удаляем временные файлы после завершения обработки запроса
+    #     if os.path.exists(temp_file_path):
+    #         os.remove(temp_file_path)
+    #     if os.path.exists(modified_temp_file_path):
+    #         os.remove(modified_temp_file_path)
 
     return {"message": f"File '{filename}' modified and uploaded successfully."}
 
