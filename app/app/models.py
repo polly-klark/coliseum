@@ -16,6 +16,10 @@ class PcapAnalyzer:
                     self.ips.add(packet[IP].src)
                     self.ips.add(packet[IP].dst)
 
+    def get_sorted_ips(self):
+        """Возвращает отсортированный список IP-адресов"""
+        return sorted(self.ips)
+
 # Модель пользователя
 class User(BaseModel):
     username: str

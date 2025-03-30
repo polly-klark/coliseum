@@ -44,6 +44,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setInputValues((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Добавьте функцию сброса состояний
+  const resetForm = () => {
+    setActiveRows({});
+    setInputValues({});
+  };
+
   // Получение активных строк при нажатии кнопки
   const getActiveRows = async (filename) => {
     const result = Object.keys(activeRows)
@@ -73,6 +79,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       message.error(`Ошибка при модификации файла "${filename}"`);
     }
     setOpen(false);
+    resetForm();
   };
 
   // Определение колонок таблицы

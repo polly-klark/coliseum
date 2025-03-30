@@ -311,8 +311,8 @@ async def ip_list(filename: str):
             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
     analyzer = PcapAnalyzer(temp_file_path)
-    input_array = analyzer.ips
-    result = [{"key": str(i+1), "ip": ip} for i, ip in enumerate(input_array)]
+    sorted_ips = analyzer.get_sorted_ips()
+    result = [{"key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)]
     return result
 
 # Модифицируем файл атаки
@@ -321,31 +321,38 @@ async def file_modification(filename: str, request_data: ModificationRequest):
     changed_ips = request_data.items
     logger.info(f"Получены данные: filename: {filename}, items: {changed_ips}")
     # Открываем поток для чтения файла из GridFS по имени
-    # try:
-    #     grid_out = await fsa.open_download_stream_by_name(filename)
-    # except Exception as e:
-    #     logger.error(f"Ошибка при получении файла: {str(e)}")
-    #     raise HTTPException(status_code=404, detail="File not found")
+    try:
+        grid_out = await fsa.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
 
-    # # Создаем временный файл для сохранения содержимого
-    # with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-    #     try:
-    #         # Читаем данные из GridFS и записываем их во временный файл
-    #         while True:
-    #             chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
-    #             if not chunk:
-    #                 break
-    #             temp_file.write(chunk)
+    # Создаем временный файл для сохранения содержимого
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        try:
+            # Читаем данные из GridFS и записываем их во временный файл
+            while True:
+                chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
+                if not chunk:
+                    break
+                temp_file.write(chunk)
 
-    #         temp_file_path = temp_file.name  # Сохраняем имя временного файла
+            temp_file_path = temp_file.name  # Сохраняем имя временного файла
 
-    #     except Exception as e:
-    #         logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
-    #         raise HTTPException(status_code=500, detail="Internal Server Error")
+        except Exception as e:
+            logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # # Реализуем изменение IP
-    # try:
-    #     packets = scapy.rdpcap(temp_file_path)  # Читаем пакеты из временного файла
+    # Реализуем изменение IP
+    if changed_ips:
+        try:
+            analyzer = PcapAnalyzer(temp_file_path)
+            sorted_ips = analyzer.get_sorted_ips()  # Получение отсортированного списка IP
+            for item in changed_ips:
+                key = int(item.key) - 1   # Получение значения ключа
+                old_ip = sorted_ips[key]  # Получение старого IP из списка
+                new_ip = item.ip    # Получение IP-адреса
+                logger.info(f"Получены данные: key: {key}, old_ip: {old_ip}, new_ip: {new_ip}")
     #     for packet in packets:
     #         if packet.haslayer(scapy.IP):
     #             packet["IP"].src = ip_forward
@@ -367,9 +374,9 @@ async def file_modification(filename: str, request_data: ModificationRequest):
     #     with open(modified_temp_file_path, 'rb') as f:
     #         await fsuser.upload_from_stream(new_filename, f)
 
-    # except Exception as e:
-    #     logger.error(f"Ошибка при обработке пакетов: {str(e)}")
-    #     raise HTTPException(status_code=500, detail="Internal Server Error")
+        except Exception as e:
+            logger.error(f"Ошибка при обработке пакетов: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
     # finally:
     #     # Удаляем временные файлы после завершения обработки запроса
