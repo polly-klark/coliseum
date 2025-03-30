@@ -3,7 +3,7 @@ import gostcrypto, os
 from scapy.all import PcapReader, IP
 
 class PcapAnalyzer:
-    def init(self, filename):
+    def __init__(self, filename):
         self.filename = filename
         self.ips = set()
         self._process_packets()

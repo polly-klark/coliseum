@@ -1,6 +1,15 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message, Modal, Form, Button, Input } from "antd";
+import {
+  Table,
+  Space,
+  message,
+  Modal,
+  Form,
+  Button,
+  Input,
+  Checkbox,
+} from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
@@ -10,13 +19,61 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
+  const [fileData, setFileData] = React.useState([]);
+  // Состояние для отслеживания активных строк
+  const [activeRows, setActiveRows] = React.useState({});
   // Создаем экземпляр формы
   const [form] = Form.useForm();
-  const initialValues = {
-    // Задайте начальные значения
-    ipForward: "",
-    ipVictim: "",
+  // const initialValues = {
+  //   // Задайте начальные значения
+  //   ipForward: "",
+  //   ipVictim: "",
+  // };
+
+  // Обработчик изменения чекбокса
+  const handleCheckboxChange = (key) => {
+    setActiveRows((prev) => ({
+      ...prev,
+      [key]: !prev[key], // Переключение состояния
+    }));
   };
+
+  // Определение колонок таблицы
+  const columns = [
+    {
+      title: "№ п/п",
+      dataIndex: "key",
+      key: "key",
+      render: (_, __, index) => index + 1, // Порядковый номер строки
+    },
+    {
+      title: "Изменить",
+      dataIndex: "checkbox",
+      key: "checkbox",
+      render: (_, record) => (
+        <Checkbox
+          checked={activeRows[record.key] || false}
+          onChange={() => handleCheckboxChange(record.key)}
+        />
+      ),
+    },
+    {
+      title: "Исходный IP-адрес",
+      dataIndex: "ip",
+      key: "ip",
+    },
+    {
+      title: "Новый IP-адрес данных",
+      dataIndex: "input",
+      key: "input",
+      render: (_, record) => (
+        <Input
+          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
+          placeholder="Введите данные"
+        />
+      ),
+    },
+  ];
 
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -57,6 +114,16 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     setOpen(true);
     setSelectedFilename(filename);
+    try {
+      const response = await axios.get(`http://localhost:8000/modification_list/${filename}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFileData(response.data);
+      console.log(response.data)
+    } catch (error) {
+      console.error("Ошибка при получении данных:", error);
+      setFileData([]); // В случае ошибки устанавливаем пустой массив
+    }
   };
   const handleMod = async (filename, ip_forward, ip_victim) => {
     try {
@@ -96,13 +163,15 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
     }
-  }
+  };
 
   return (
     <>
       <Space>
         <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && <Button onClick={() => handleStop()}>Остановить</Button>}
+        {stopFilename !== "ничего" && (
+          <Button onClick={() => handleStop()}>Остановить</Button>
+        )}
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
       </Space>
       <Table dataSource={data} rowKey="filename">
@@ -154,6 +223,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         open={open}
         title={"Модификация " + selectedFilename}
         onCancel={handleCancel}
+        width={1000}
         footer={[
           <Button
             key="back"
@@ -187,46 +257,11 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           </Button>,
         ]}
       >
-        <Form
-          form={form}
-          name="modify"
-          initialValues={initialValues}
-          labelCol={{
-            span: 8,
-          }}
-          wrapperCol={{
-            span: 16,
-          }}
-          style={{
-            maxWidth: 600,
-          }}
-          autoComplete="off"
-        >
-          <Form.Item
-            label="IP-адрес атакующего"
-            name="ipForward"
-            rules={[
-              {
-                required: true,
-                message: "Введите IP-адрес атакующего!",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="IP-адрес жертвы"
-            name="ipVictim"
-            rules={[
-              {
-                required: true,
-                message: "Введите IP-адрес жертвы!",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-        </Form>
+        <Table 
+      dataSource={fileData} 
+      columns={columns} 
+      rowKey="key" // Уникальный ключ строки
+    />
       </Modal>
     </>
   );

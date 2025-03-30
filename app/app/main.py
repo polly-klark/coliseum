@@ -287,10 +287,33 @@ async def file_info(filename: str):
     
     return {"file": file_info}
 
-@app.get("/modification_list/{filemname}")
+@app.get("/modification_list/{filename}")
 async def ip_list(filename: str):
-    analyzer = PcapAnalyzer(filename)
-    return analyzer.ips
+    try:
+        grid_out = await fsa.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # Создаем временный файл для сохранения содержимого
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        try:
+            # Читаем данные из GridFS и записываем их во временный файл
+            while True:
+                chunk = await grid_out.read(1024)  # Читаем порциями по 1024 байта
+                if not chunk:
+                    break
+                temp_file.write(chunk)
+
+            temp_file_path = temp_file.name  # Сохраняем имя временного файла
+
+        except Exception as e:
+            logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+    analyzer = PcapAnalyzer(temp_file_path)
+    input_array = analyzer.ips
+    result = [{"key": str(i+1), "ip": ip} for i, ip in enumerate(input_array)]
+    return result
 
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
