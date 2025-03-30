@@ -223,7 +223,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         open={open}
         title={"Модификация " + selectedFilename}
         onCancel={handleCancel}
-        width={1000}
+        width={700}
         footer={[
           <Button
             key="back"
