@@ -545,7 +545,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://192.168.42.129:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -573,7 +573,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://192.168.42.129:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
+            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
             response.raise_for_status()  # Проверка статуса ответа
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
@@ -602,7 +602,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://192.168.42.129:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -630,7 +630,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://192.168.42.129:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -641,7 +641,7 @@ async def send_file(filename: str):
 @app.post("/stop")
 async def stop():
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://192.168.42.129:9000/stop", timeout=None)
+        response = await client.post("http://10.33.102.155:9000/stop", timeout=None)
     return response.text
 
 # Запуск сервера (это можно сделать через командную строку)
