@@ -368,7 +368,7 @@ async def file_modification(filename: str, request_data: ModificationRequest):
             modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
             scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
             new_filename = rename_file(filename)
-   
+    
             # Загружаем измененный файл в GridFS
             with open(modified_temp_file_path, 'rb') as f:
                 await fsadmin.upload_from_stream(new_filename, f)

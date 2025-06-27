@@ -31,7 +31,7 @@ class IpPair(BaseModel):
     ip: str
 
 class ModificationRequest(BaseModel):
-     items: list[IpPair]
+    items: list[IpPair]
 
 def hash_password(password: str) -> str:
     password = password.encode('cp1251')
