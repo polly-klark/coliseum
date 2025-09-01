@@ -92,7 +92,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         user = User(**user_data)  # Создаем объект User из словаря
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error parsing user data")
-          
+    
     return user
 
 # Ваши функции для получения файлов
