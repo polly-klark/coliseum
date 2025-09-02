@@ -453,21 +453,6 @@ async def get_files(user: User = Depends(get_current_user)):
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role not recognized")
 
-# Удаляем файл
-@app.delete("/file/{filename}")
-async def delete_file(filename: str):
-    # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fsuser.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при удалении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Удаляем файл по его ID
-    await fsuser.delete(grid_out._id)
-    
-    return {"message": f"File '{filename}' is deleted successfully."}
-
 # Удаляем файл атаки
 @app.delete("/attack/{filename}")
 async def delete_file(filename: str):
