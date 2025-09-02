@@ -313,6 +313,8 @@ async def ip_list(filename: str):
     analyzer = PcapAnalyzer(temp_file_path)
     sorted_ips = analyzer.get_sorted_ips()
     result = [{"key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)]
+    if os.path.exists(temp_file_path):
+        os.remove(temp_file_path)
     return result
 
 # Модифицируем файл атаки
