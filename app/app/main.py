@@ -53,6 +53,7 @@ fsuser = AsyncIOMotorGridFSBucket(user_db)
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+IP_ADDDRES_FOR_START = "10.33.102.155"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -532,7 +533,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -560,7 +561,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
             response.raise_for_status()  # Проверка статуса ответа
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
@@ -589,7 +590,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -617,7 +618,7 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post("http://10.33.102.155:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -628,7 +629,7 @@ async def send_file(filename: str):
 @app.post("/stop")
 async def stop():
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://10.33.102.155:9000/stop", timeout=None)
+        response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/stop", timeout=None)
     return response.text
 
 # Запуск сервера (это можно сделать через командную строку)

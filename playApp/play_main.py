@@ -39,6 +39,7 @@ def run_tcpreplay(temp_file_path: str):
     pid = process.pid
     r.set('tcpreplay:pid', pid)
 
+    # Сделаю когда будет таймер наверное
     # finally:
     #     # Удаление файла после выполнения команды
     #     os.remove(temp_file_path)
