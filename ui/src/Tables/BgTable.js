@@ -26,6 +26,24 @@ const BgTable = ({ data, user, token, fetchData }) => {
     }
   };
 
+  const handleDownload = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
+
+    try {
+      await axios.get(`http://localhost:8000/downloadbackground/${filename}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      message.success(`Файл "${filename}" успешно получен`);
+      // Вызываем fetchData для обновления данных
+      await fetchData("background"); // Дождитесь завершения fetchData
+    } catch (error) {
+      console.error("Ошибка при получении файла:", error);
+      message.error(`Ошибка при получении файла "${filename}"`);
+    }
+  };
+
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
@@ -94,6 +112,12 @@ const BgTable = ({ data, user, token, fetchData }) => {
                   {/* Предотвращаем переход по ссылке */}Удалить
                 </a>
               )}
+              <a
+                href="#"
+                onClick={(event) => handleDownload(record.filename, event)}
+              >
+                Скачать
+              </a>
             </Space>
           )}
         />

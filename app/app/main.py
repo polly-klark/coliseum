@@ -53,7 +53,7 @@ fsuser = AsyncIOMotorGridFSBucket(user_db)
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-IP_ADDDRES_FOR_START = "10.33.102.155"
+IP_ADDDRES_FOR_START = "192.168.42.129"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -219,11 +219,81 @@ async def upload_file(file: UploadFile = File(...)):
     return {"message": "File uploaded successfully", "filename": file.filename}
 
 # Получаем файл
-@app.get("/file/{filename}")
+@app.get("/downloadfile/{filename}")
 async def get_file(filename: str):
     # Открываем поток для чтения файла из GridFS по имени
     try:
         grid_out = await fs.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:             
+        # Возвращаем файл с правильным именем
+        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+# Получаем файл
+@app.get("/downloadattack/{filename}")
+async def get_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsa.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:             
+        # Возвращаем файл с правильным именем
+        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/downloadbackground/{filename}")
+async def get_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsb.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:             
+        # Возвращаем файл с правильным именем
+        logger.info(f"Сейчас буду качать файл {filename}")
+        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/downloaduserfile/{filename}")
+async def get_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsuser.open_download_stream_by_name(filename)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    try:             
+        # Возвращаем файл с правильным именем
+        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/downloadadminfile/{filename}")
+async def get_file(filename: str):
+    # Открываем поток для чтения файла из GridFS по имени
+    try:
+        grid_out = await fsadmin.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
