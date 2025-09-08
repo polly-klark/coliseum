@@ -105,8 +105,8 @@ const ModTable = ({ data, user, token, fetchData }) => {
           render={(_, record) => (
             <Space size="middle">
               <a
-                  href="#"
-                  onClick={(event) => handlePlay(record.filename, event)}
+                href="#"
+                onClick={(event) => handlePlay(record.filename, event)}
               >
                 Запустить
               </a>
