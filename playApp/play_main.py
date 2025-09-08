@@ -3,6 +3,7 @@ from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from subprocess import check_output
+from scapy.all import rdpcap
 
 def get_pid(name):
     return check_output(["pidof",name])
@@ -44,6 +45,13 @@ def run_tcpreplay(temp_file_path: str):
     #     # Удаление файла после выполнения команды
     #     os.remove(temp_file_path)
     #     logger.info(f"Файл {temp_file_path} удален")
+    
+def get_pcap_duration(file_path: str) -> float:
+    packets = rdpcap(file_path)
+    start_time = packets[0].time
+    end_time = packets[-1].time
+    duration = end_time - start_time
+    return duration
 
 @app.get("/hello")
 async def get_hello():
@@ -65,9 +73,15 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
             raise HTTPException(status_code=500, detail="Internal Server Error")
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
+    
+    # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
+    duration = get_pcap_duration(temp_file_path)
+
     # Запуск процесса в фоновом режиме
     background_tasks.add_task(run_tcpreplay, temp_file_path)
-    return {"message": f"File {filename} received successfully"}
+
+    # Возвращаем длительность проигрывания вместе с сообщением
+    return {"message": f"File {filename} received successfully", "duration": duration}
 
 @app.post("/stop")
 async def stop():
