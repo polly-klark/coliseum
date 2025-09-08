@@ -265,7 +265,6 @@ async def get_file(filename: str):
 
     try:             
         # Возвращаем файл с правильным именем
-        logger.info(f"Сейчас буду качать файл {filename}")
         return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
