@@ -26,6 +26,29 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
+  const handleDownload = async (filename, event) => {
+    event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
+
+    try {
+      const response = await axios.get(`http://localhost:8000/downloadbackground/${filename}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success(`Файл "${filename}" успешно передан на скачивание`);
+    } catch (error) {
+      console.error("Ошибка при получении файла:", error);
+      message.error(`Ошибка при получении файла "${filename}"`);
+    }
+  };
+
   const handleUserPlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
@@ -118,6 +141,12 @@ const ModTable = ({ data, user, token, fetchData }) => {
                 onClick={(event) => handleDelete(record.filename, event)}
               >
                 Удалить
+              </a>
+              <a
+                href="#"
+                onClick={(event) => handleDownload(record.filename, event)}
+              >
+                Скачать
               </a>
             </Space>
           )}
