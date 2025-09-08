@@ -30,7 +30,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
 
     try {
-      const response = await axios.get(`http://localhost:8000/downloadbackground/${filename}`, {
+      const response = await axios.get(`http://localhost:8000/download${user}file/${filename}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -49,12 +49,12 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
-  const handleUserPlay = async (filename, event) => {
+  const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename)
     try {
-      await axios.post(`http://localhost:8000/play_usermod/${filename}`, {
+      await axios.post(`http://localhost:8000/play_${user}mod/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -66,22 +66,6 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
-  const handleAdminPlay = async (filename, event) => {
-    event.preventDefault(); // Предотвращаем переход по ссылке
-    console.log(`Проигрывается файл ${filename}`);
-    setStopFilename(filename)
-    try {
-      await axios.post(`http://localhost:8000/play_adminmod/${filename}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      message.success(`Файл "${filename}" успешно передан на запуск`);
-    } catch (error) {
-      console.error("Ошибка при передаче файла:", error);
-      message.error(`Ошибка при передаче файла "${filename}"`);
-    }
-  };
   const handleStop = async () => {
     try {
       await axios.post(`http://localhost:8000/stop`);
@@ -120,22 +104,12 @@ const ModTable = ({ data, user, token, fetchData }) => {
           key="action"
           render={(_, record) => (
             <Space size="middle">
-              {user === "admin" && (
-                <a
+              <a
                   href="#"
-                  onClick={(event) => handleAdminPlay(record.filename, event)}
-                >
-                  Запустить
-                </a>
-              )}
-              {user === "user" && (
-                <a
-                  href="#"
-                  onClick={(event) => handleUserPlay(record.filename, event)}
-                >
-                  Запустить
-                </a>
-              )}
+                  onClick={(event) => handlePlay(record.filename, event)}
+              >
+                Запустить
+              </a>
               <a
                 href="#"
                 onClick={(event) => handleDelete(record.filename, event)}
