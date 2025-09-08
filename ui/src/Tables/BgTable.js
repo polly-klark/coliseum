@@ -35,9 +35,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      message.success(`Файл "${filename}" успешно получен`);
-      // Вызываем fetchData для обновления данных
-      await fetchData("background"); // Дождитесь завершения fetchData
+      message.success(`Файл "${filename}" успешно передан на скачивание`);
     } catch (error) {
       console.error("Ошибка при получении файла:", error);
       message.error(`Ошибка при получении файла "${filename}"`);
