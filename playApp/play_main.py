@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess, psutil, redis
+import os, tempfile, logging, subprocess, psutil, redis, asyncio
 from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -35,17 +35,24 @@ app.add_middleware(
 logging.basicConfig(filename='playApp.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def run_tcpreplay(temp_file_path: str):
-    process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
-    pid = process.pid
-    r.set('tcpreplay:pid', pid)
+async def run_tcpreplay(temp_file_path: str, delay: float):
+    try:
+        process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+        pid = process.pid
+        r.set('tcpreplay:pid', pid)
+        await asyncio.sleep(delay)
 
+    finally:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+    
     # Сделаю когда будет таймер наверное
     # finally:
     #     # Удаление файла после выполнения команды
     #     os.remove(temp_file_path)
     #     logger.info(f"Файл {temp_file_path} удален")
-    
+    # Удаляем временные файлы после завершения обработки запроса
+
 def get_pcap_duration(file_path: str) -> float:
     packets = rdpcap(file_path)
     start_time = packets[0].time
@@ -78,7 +85,7 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
-    background_tasks.add_task(run_tcpreplay, temp_file_path)
+    background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration))
 
     # Возвращаем длительность проигрывания вместе с сообщением
     return {"message": f"File {filename} received successfully", "duration": duration}
