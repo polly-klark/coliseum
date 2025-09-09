@@ -75,7 +75,7 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     logger.info(f"Получаю файл {filename} для запуска")
     
     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
-    duration = get_pcap_duration(temp_file_path)
+    duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
     background_tasks.add_task(run_tcpreplay, temp_file_path)
