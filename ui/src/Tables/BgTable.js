@@ -5,11 +5,15 @@ import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
 const { Column } = Table;
-const { Timer } = Statistic;
+const { Countdown } = Statistic;
 
 const BgTable = ({ data, user, token, fetchData }) => {
   const [stopFilename, setStopFilename] = React.useState("ничего");
-  const [deadLine, setDeadLine] = React.useState(0)
+  const [deadLine, setDeadLine] = React.useState(0);
+  const onFinish = () => {
+    setDeadLine(0);
+    setStopFilename("ничего");
+  };
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -62,7 +66,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
         },
       });
       const parsedData = JSON.parse(response.data);
-      const duration = parseFloat(parsedData.duration);
+      const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLine(duration);
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
@@ -74,6 +78,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
     try {
       await axios.post(`http://localhost:8000/stop`);
       message.success(`Процесс успешно остановлен`);
+      setDeadLine(0);
     } catch (error) {
       console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
@@ -83,9 +88,10 @@ const BgTable = ({ data, user, token, fetchData }) => {
   return (
     <>
       <Space>
-      <p>Сейчас проигрывается {stopFilename}, осталось {deadLine} секунд</p>
+      <p>Сейчас проигрывается {stopFilename}</p>
         {stopFilename !== "ничего" && <Button onClick={() => handleStop()}>Остановить</Button>}
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLine} onFinish={onFinish} />
       </Space>
       <Table dataSource={data} rowKey="filename">
         <Column
