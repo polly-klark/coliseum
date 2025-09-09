@@ -9,16 +9,19 @@ import {
   Button,
   Input,
   Checkbox,
+  Statistic,
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
 const { Column } = Table;
+const { Timer } = Statistic;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
+  const [deadLine, setDeadLine] = React.useState(0)
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
   const [activeRows, setActiveRows] = React.useState({});
@@ -126,11 +129,14 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename);
     try {
-      await axios.post(`http://localhost:8000/play_attack/${filename}`, {
+      const response = await axios.post(`http://localhost:8000/play_attack/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      const parsedData = JSON.parse(response.data);
+      const duration = parseFloat(parsedData.duration);
+      setDeadLine(duration);
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
@@ -216,7 +222,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   return (
     <>
       <Space>
-        <p>Сейчас проигрывается {stopFilename}</p>
+      <p>Сейчас проигрывается {stopFilename}, осталось {deadLine} секунд</p>
         {stopFilename !== "ничего" && (
           <Button onClick={() => handleStop()}>Остановить</Button>
         )}

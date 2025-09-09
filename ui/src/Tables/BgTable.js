@@ -1,13 +1,15 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message, Button } from "antd";
+import { Table, Space, message, Button, Statistic } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
 const { Column } = Table;
+const { Timer } = Statistic;
 
 const BgTable = ({ data, user, token, fetchData }) => {
   const [stopFilename, setStopFilename] = React.useState("ничего");
+  const [deadLine, setDeadLine] = React.useState(0)
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -54,11 +56,14 @@ const BgTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename);
     try {
-      await axios.post(`http://localhost:8000/play_background/${filename}`, {
+      const response = await axios.post(`http://localhost:8000/play_background/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      const parsedData = JSON.parse(response.data);
+      const duration = parseFloat(parsedData.duration);
+      setDeadLine(duration);
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
@@ -78,7 +83,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
   return (
     <>
       <Space>
-        <p>Сейчас проигрывается {stopFilename}</p>
+      <p>Сейчас проигрывается {stopFilename}, осталось {deadLine} секунд</p>
         {stopFilename !== "ничего" && <Button onClick={() => handleStop()}>Остановить</Button>}
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
       </Space>
