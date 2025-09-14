@@ -40,18 +40,12 @@ async def run_tcpreplay(temp_file_path: str, delay: float):
         process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
         pid = process.pid
         r.set('tcpreplay:pid', pid)
-        await asyncio.sleep(delay)
+        r.set('file:path', temp_file_path)
+        await asyncio.sleep(delay + 1)
 
     finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-    
-    # Сделаю когда будет таймер наверное
-    # finally:
-    #     # Удаление файла после выполнения команды
-    #     os.remove(temp_file_path)
-    #     logger.info(f"Файл {temp_file_path} удален")
-    # Удаляем временные файлы после завершения обработки запроса
 
 def get_pcap_duration(file_path: str) -> float:
     packets = rdpcap(file_path)
@@ -101,4 +95,8 @@ async def stop():
         process.terminate()
     except psutil.NoSuchProcess:
         mes = f"Процесс {pid} не найден"
+    finally:
+        temp_file_path = r.get('file:path')
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
     return {"message": f"{mes}"}

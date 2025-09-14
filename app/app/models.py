@@ -1,24 +1,38 @@
 from pydantic import BaseModel
 import gostcrypto, os
 from scapy.all import PcapReader, IP
+from typing import List, Optional
+
+import scapy.all as scapy
 
 class PcapAnalyzer:
-    def __init__(self, filename):
-        self.filename = filename
-        self.ips = set()
-        self._process_packets()
-
-    def _process_packets(self):
-        """Обработка пакетов и сбор IP-адресов"""
-        with PcapReader(self.filename) as reader:
-            for packet in reader:
-                if packet.haslayer(IP):
-                    self.ips.add(packet[IP].src)
-                    self.ips.add(packet[IP].dst)
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.packets = scapy.rdpcap(file_path)
 
     def get_sorted_ips(self):
-        """Возвращает отсортированный список IP-адресов"""
-        return sorted(self.ips)
+        ips = set()
+        for packet in self.packets:
+            if packet.haslayer(scapy.IP):
+                ips.add(packet[scapy.IP].src)
+                ips.add(packet[scapy.IP].dst)
+        return sorted(ips)
+
+    def get_sorted_tcp_ports(self):
+        tcp_ports = set()
+        for packet in self.packets:
+            if packet.haslayer(scapy.TCP):
+                tcp_ports.add(packet[scapy.TCP].sport)
+                tcp_ports.add(packet[scapy.TCP].dport)
+        return sorted(tcp_ports)
+
+    def get_sorted_udp_ports(self):
+        udp_ports = set()
+        for packet in self.packets:
+            if packet.haslayer(scapy.UDP):
+                udp_ports.add(packet[scapy.UDP].sport)
+                udp_ports.add(packet[scapy.UDP].dport)
+        return sorted(udp_ports)
 
 # Модель пользователя
 class User(BaseModel):
@@ -30,8 +44,19 @@ class IpPair(BaseModel):
     key: str
     ip: str
 
+class TcpPortPair(BaseModel):
+    key: str
+    port: int
+
+class UdpPortPair(BaseModel):
+    key: str
+    port: int
+
 class ModificationRequest(BaseModel):
-    items: list[IpPair]
+    ip_items: Optional[List[IpPair]] = None
+    tcp_port_items: Optional[List[TcpPortPair]] = None
+    udp_port_items: Optional[List[UdpPortPair]] = None
+    # Можно добавлять другие списки замены по мере необходимости
 
 def hash_password(password: str) -> str:
     password = password.encode('cp1251')

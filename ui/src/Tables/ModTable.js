@@ -18,7 +18,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
     try {
-      await axios.delete(`http://localhost:8000/${user}/${filename}`, {
+      await axios.delete(`http://localhost:8000/modified/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -36,7 +36,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
 
     try {
-      const response = await axios.get(`http://localhost:8000/download${user}file/${filename}`, {
+      const response = await axios.get(`http://localhost:8000/downloadfile/${filename}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -60,11 +60,10 @@ const ModTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename)
     try {
-      const response = await axios.post(`http://localhost:8000/play_${user}mod/${filename}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.post(`http://localhost:8000/play/${filename}`, null, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+
       const parsedData = JSON.parse(response.data);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLine(duration);

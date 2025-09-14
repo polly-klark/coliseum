@@ -35,25 +35,21 @@ app.add_middleware(
 )
 
 # Подключение к MongoDB
-client = AsyncIOMotorClient('mongodb://localhost:27017/')
-auth_db = client['auth_db']
-db = client['test_gridfs']
-bg = client['background']
-adb = client['attack']
-user_db = client['user_m']
-admin_db = client['admin_m']
+clientDB = AsyncIOMotorClient('mongodb://localhost:27017/')
+auth_db = clientDB['auth_db']
+db = clientDB['test_gridfs']
+bg = clientDB['background']
+adb = clientDB['attack']
 # print(isinstance(db, database.Database))  # Должно вернуть True
 fs = AsyncIOMotorGridFSBucket(db)
 fsa = AsyncIOMotorGridFSBucket(adb)
 fsb = AsyncIOMotorGridFSBucket(bg)
-fsadmin = AsyncIOMotorGridFSBucket(admin_db)
-fsuser = AsyncIOMotorGridFSBucket(user_db)
 
 # JWT настройки
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-IP_ADDDRES_FOR_START = "10.33.102.155"
+IP_ADDDRES_FOR_START = "192.168.42.129"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -73,13 +69,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            logger.error(f"Пустое имя пользователя")
             raise credentials_exception
     except JWTError:
+        logger.error(f"что-то не то с токеном")
         raise credentials_exception
     
     # Получаем пользователя из базы данных
@@ -97,19 +94,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # Ваши функции для получения файлов
-async def list_files_admin():
-    cursor = fsadmin.find()
-    file_list = []
-    async for file in cursor:
-        file_list.append({
-            "filename": file.filename,
-            "length": file.length,
-            "upload_date": file.upload_date,
-        })
-    return file_list
-
-async def list_files_user():
-    cursor = fsuser.find()
+async def list_files_mod(user: User = Depends(get_current_user)):
+    db = clientDB[f"{user.username}_m"]
+    fs = AsyncIOMotorGridFSBucket(db)
+    cursor = fs.find()
     file_list = []
     async for file in cursor:
         file_list.append({
@@ -219,24 +207,6 @@ async def upload_file(file: UploadFile = File(...)):
     return {"message": "File uploaded successfully", "filename": file.filename}
 
 # Получаем файл
-@app.get("/downloadfile/{filename}")
-async def get_file(filename: str):
-    # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fs.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
-
-    try:             
-        # Возвращаем файл с правильным именем
-        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-# Получаем файл
 @app.get("/downloadattack/{filename}")
 async def get_file(filename: str):
     # Открываем поток для чтения файла из GridFS по имени
@@ -271,28 +241,13 @@ async def get_file(filename: str):
         logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@app.get("/downloaduserfile/{filename}")
-async def get_file(filename: str):
+@app.get("/downloadfile/{filename}")
+async def get_file(filename: str, user: User = Depends(get_current_user)):
+    db = clientDB[f"{user.username}_m"]
+    fs = AsyncIOMotorGridFSBucket(db)
     # Открываем поток для чтения файла из GridFS по имени
     try:
-        grid_out = await fsuser.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
-
-    try:             
-        # Возвращаем файл с правильным именем
-        return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-
-@app.get("/downloadadminfile/{filename}")
-async def get_file(filename: str):
-    # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fsadmin.open_download_stream_by_name(filename)
+        grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
@@ -389,8 +344,13 @@ async def ip_list(filename: str):
 
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
-async def file_modification(filename: str, request_data: ModificationRequest):
-    changed_ips = request_data.items
+async def file_modification(filename: str, request_data: ModificationRequest, user: User = Depends(get_current_user)):
+    changed_ips = getattr(request_data, "ip_items", None)
+    changed_tcp_ports = getattr(request_data, "tcp_port_items", None)
+    changed_udp_ports = getattr(request_data, "udp_port_items", None)
+    # Можно добавить другие поля замены в будущем
+    db = clientDB[f"{user.username}_m"]
+    fs = AsyncIOMotorGridFSBucket(db)
     logger.info(f"Получены данные: filename: {filename}, items: {changed_ips}")
     # Открываем поток для чтения файла из GridFS по имени
     try:
@@ -415,12 +375,15 @@ async def file_modification(filename: str, request_data: ModificationRequest):
             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    # Реализуем изменение IP
-    if changed_ips:
-        try:
-            analyzer = PcapAnalyzer(temp_file_path)
-            packets = scapy.rdpcap(temp_file_path)
-            sorted_ips = analyzer.get_sorted_ips()  # Получение отсортированного списка IP
+    # Реализуем изменение
+    try: 
+        analyzer = PcapAnalyzer(temp_file_path)
+        packets = analyzer.packets
+        sorted_ips = analyzer.get_sorted_ips()
+        sorted_tcp_ports = analyzer.get_sorted_tcp_ports()
+        sorted_udp_ports = analyzer.get_sorted_udp_ports()
+
+        if changed_ips:
             for item in changed_ips:
                 key = int(item.key) - 1   # Получение значения ключа
                 old_ip = sorted_ips[key]  # Получение старого IP из списка
@@ -431,34 +394,67 @@ async def file_modification(filename: str, request_data: ModificationRequest):
                             packet["IP"].src = new_ip
                         if packet["IP"].dst == old_ip:
                             packet["IP"].dst = new_ip
-            for packet in packets:
-                del packet["IP"].len  # Удаляем длину IP (будет пересчитана)
-                del packet["IP"].chksum  # Удаляем контрольную сумму (будет пересчитана)
-                packet = scapy.Ether(packet.build())
 
-            # Создаем новый временный файл для сохранения измененных пакетов
-            modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
-            scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
-            new_filename = rename_file(filename)
-    
-            # Загружаем измененный файл в GridFS
-            with open(modified_temp_file_path, 'rb') as f:
-                await fsadmin.upload_from_stream(new_filename, f)
-                
-            # Загружаем измененный файл в GridFS
-            with open(modified_temp_file_path, 'rb') as f:
-                await fsuser.upload_from_stream(new_filename, f)
+        # Замена TCP портов
+        if changed_tcp_ports:
+            for item in changed_tcp_ports:
+                key = int(item.key) - 1
+                old_port = sorted_tcp_ports[key]
+                new_port = item.port
+                for packet in packets:
+                    if packet.haslayer(scapy.TCP):
+                        if packet["TCP"].sport == old_port:
+                            packet["TCP"].sport = new_port
+                        if packet["TCP"].dport == old_port:
+                            packet["TCP"].dport = new_port
 
-        except Exception as e:
+        # Замена UDP портов
+        if changed_udp_ports:
+            for item in changed_udp_ports:
+                key = int(item.key) - 1
+                old_port = sorted_udp_ports[key]
+                new_port = item.port
+                for packet in packets:
+                    if packet.haslayer(scapy.UDP):
+                        if packet["UDP"].sport == old_port:
+                            packet["UDP"].sport = new_port
+                        if packet["UDP"].dport == old_port:
+                            packet["UDP"].dport = new_port
+
+        for packet in packets:
+            if packet.haslayer(scapy.IP):
+                if "len" in packet["IP"].fields:
+                    del packet["IP"].len
+                if "chksum" in packet["IP"].fields:
+                    del packet["IP"].chksum
+            if packet.haslayer(scapy.TCP):
+                if "chksum" in packet["TCP"].fields:
+                    del packet["TCP"].chksum
+            if packet.haslayer(scapy.UDP):
+                if "chksum" in packet["UDP"].fields:
+                    del packet["UDP"].chksum
+            packet = scapy.Ether(packet.build())
+
+
+        # Создаем новый временный файл для сохранения измененных пакетов
+        modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
+        scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
+        new_filename = rename_file(filename)
+
+        # Загружаем измененный файл в GridFS
+        with open(modified_temp_file_path, 'rb') as f:
+            await fs.upload_from_stream(new_filename, f)
+
+    except Exception as e:
             logger.error(f"Ошибка при обработке пакетов: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
-        finally:
-            # Удаляем временные файлы после завершения обработки запроса
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
-            if os.path.exists(modified_temp_file_path):
-                os.remove(modified_temp_file_path)
+    finally:
+        # Удаляем временные файлы после завершения обработки запроса
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        if os.path.exists(modified_temp_file_path):
+            os.remove(modified_temp_file_path)
 
     return {"message": f"File '{filename}' modified and uploaded successfully."}
 
@@ -497,31 +493,13 @@ async def list_files():
     return {"files": file_list}
 
 # Получаем список файлов
-@app.get("/user")
-async def list_files():
-    # Получаем курсор для всех файлов в GridFS
-    cursor = fsuser.find()
-    
-    # Создаем список файлов, извлекая необходимые поля
-    file_list = []
-    async for file in cursor:
-        file_list.append({
-            "filename": file.filename,
-            "length": file.length,
-            "upload_date": file.upload_date,
-        })
-    
-    return {"files": file_list}
-
 # Объединенная функция для получения файлов в зависимости от роли
 @app.get("/modified", response_model=list)
 async def get_files(user: User = Depends(get_current_user)):
-    if user.role == "admin":
-        return await list_files_admin()
-    elif user.role == "user":
-        return await list_files_user()
-    else:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role not recognized")
+    try: 
+        return await list_files_mod(user)
+    except:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User not recognized")
 
 # Удаляем файл атаки
 @app.delete("/attack/{filename}")
@@ -553,31 +531,19 @@ async def delete_file(filename: str):
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
-@app.delete("/user/{filename}")
-async def delete_file(filename: str):
+@app.delete("/modified/{filename}")
+async def delete_file(filename: str, user: User = Depends(get_current_user)):
+    db = clientDB[f"{user.username}_m"]
+    fs = AsyncIOMotorGridFSBucket(db)
     # Открываем поток для чтения файла из GridFS по имени
     try:
-        grid_out = await fsuser.open_download_stream_by_name(filename)
+        grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при удалении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
     
     # Удаляем файл по его ID
-    await fsuser.delete(grid_out._id)
-    
-    return {"message": f"File '{filename}' is deleted successfully."}
-
-@app.delete("/admin/{filename}")
-async def delete_file(filename: str):
-    # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fsadmin.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при удалении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Удаляем файл по его ID
-    await fsadmin.delete(grid_out._id)
+    await fs.delete(grid_out._id)
     
     return {"message": f"File '{filename}' is deleted successfully."}
 
@@ -639,12 +605,14 @@ async def send_file(filename: str):
         raise HTTPException(status_code=500, detail="Internal Server Error")
     return response.text
 
-@app.post("/play_usermod/{filename}")
-async def send_file(filename: str):
+@app.post("/play/{filename}")
+async def send_file(filename: str, user: User = Depends(get_current_user)):
+    db = clientDB[f"{user.username}_m"]
+    fs = AsyncIOMotorGridFSBucket(db)
     logger.info(f"Передаю файл {filename} для запуска")
     # Открываем поток для чтения файла из GridFS по имени
     try:
-        grid_out = await fsuser.open_download_stream_by_name(filename)
+        grid_out = await fs.open_download_stream_by_name(filename)
     except Exception as e:
         logger.error(f"Ошибка при получении файла: {str(e)}")
         raise HTTPException(status_code=404, detail="File not found")
@@ -667,34 +635,6 @@ async def send_file(filename: str):
         raise HTTPException(status_code=500, detail="Internal Server Error")
     return response.text
 
-@app.post("/play_adminmod/{filename}")
-async def send_file(filename: str):
-    logger.info(f"Передаю файл {filename} для запуска")
-    # Открываем поток для чтения файла из GridFS по имени
-    try:
-        grid_out = await fsadmin.open_download_stream_by_name(filename)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=404, detail="File not found")
-
-    try:
-
-        async def file_stream():
-            async for chunk in file_generator(grid_out):
-                yield chunk
-
-        async with httpx.AsyncClient() as client:
-            headers = {
-            "filename": filename,
-            }
-            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
-        # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-    except Exception as e:
-        logger.error(f"Ошибка при передаче файла: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
-    return response.text
-    
 @app.post("/stop")
 async def stop():
     async with httpx.AsyncClient() as client:

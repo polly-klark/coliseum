@@ -10,6 +10,8 @@ import {
   Input,
   Checkbox,
   Statistic,
+  Tabs,
+  Radio,
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
@@ -25,6 +27,14 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const onFinish = () => {
     setDeadLine(0);
     setStopFilename("ничего");
+  };
+  const [valueRadio, setValueRadio] = React.useState();
+  const onChangeRadio = e => {
+    setValueRadio(e.target.value);
+  };
+  const [disabledRadio, setDisabledRadio] = React.useState(true);
+  const toggleDisabled = () => {
+    setDisabledRadio(!disabledRadio);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -70,7 +80,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       await axios.post(
         `http://localhost:8000/modification/${filename}`,
         {
-          items: result,
+          ip_items: result,
         },
         {
           headers: {
@@ -125,6 +135,60 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           placeholder="Введите данные"
         />
       ),
+    },
+  ];
+
+  const styleRadio = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  };
+
+  const itemsOfTabs = [
+    {
+      key: '1',
+      label: 'IP-адреса',
+      children:
+        <Table
+        dataSource={fileData}
+        columns={columns}
+        rowKey="key" // Уникальный ключ строки
+        />,
+    },
+    {
+      key: '2',
+      label: 'Порты',
+      children: 
+      <>
+        <Button type="primary" onClick={toggleDisabled}>
+          Необходимо поменять
+        </Button>
+        <Radio.Group
+          defaultChecked={false} 
+          disabled={disabledRadio}
+          style={styleRadio}
+          onChange={onChangeRadio}
+          value={valueRadio}
+          options={[
+            { value: 1, label: (
+              <>
+                TCP
+                {valueRadio === 1 && (
+                  <div>TCP Table</div>
+                )}
+              </>
+            ) },
+            { value: 2, label: (
+              <>
+                UDP
+                {valueRadio === 2 && (
+                  <div>UDP Table</div>
+                )}
+              </>
+            ) },
+          ]}
+        />
+      </>,
     },
   ];
 
@@ -309,11 +373,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           </Button>,
         ]}
       >
-        <Table
-          dataSource={fileData}
-          columns={columns}
-          rowKey="key" // Уникальный ключ строки
-        />
+        <Tabs defaultActiveKey="1" items={itemsOfTabs} />
       </Modal>
     </>
   );
