@@ -24,7 +24,7 @@ const Dashboard = ({ token }) => {
     });
     setUploading(true);
     // You can use any AJAX library you like
-    fetch(`http://localhost:8000/${dir}/upload`, {
+    fetch(`http://192.168.42.129:8000/${dir}/upload`, {
       method: "POST",
       body: formData,
     })
@@ -68,7 +68,7 @@ const Dashboard = ({ token }) => {
 
   const fetchData = async (dir) => {
     try {
-      const response = await axios.get(`http://localhost:8000/${dir}`, {
+      const response = await axios.get(`http://192.168.42.129:8000/${dir}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setData(response.data);
@@ -94,7 +94,7 @@ const Dashboard = ({ token }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/user`, {
+        const response = await axios.get(`http://192.168.42.129:8000/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(response.data); // Предполагается, что API возвращает объект с полем username

@@ -18,7 +18,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
     try {
-      await axios.delete(`http://localhost:8000/modified/${filename}`, {
+      await axios.delete(`http://192.168.42.129:8000/modified/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -36,7 +36,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
 
     try {
-      const response = await axios.get(`http://localhost:8000/downloadfile/${filename}`, {
+      const response = await axios.get(`http://192.168.42.129:8000/downloadfile/${filename}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -60,7 +60,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename)
     try {
-      const response = await axios.post(`http://localhost:8000/play/${filename}`, null, {
+      const response = await axios.post(`http://192.168.42.129:8000/play/${filename}`, null, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -76,7 +76,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
 
   const handleStop = async () => {
     try {
-      await axios.post(`http://localhost:8000/stop`);
+      await axios.post(`http://192.168.42.129:8000/stop`);
       message.success(`Процесс успешно остановлен`);
       setDeadLine(0);
     } catch (error) {
