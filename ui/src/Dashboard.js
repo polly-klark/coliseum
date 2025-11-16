@@ -192,6 +192,7 @@ const Dashboard = ({ token }) => {
             <Button color="default" variant="solid" onClick={handleUploadModal}>
               Загрузить
             </Button>
+            <Divider />
           </div>
         )}
       <Modal

@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message, Button, Statistic } from "antd";
+import { Table, Space, message, Button, Statistic, Divider } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 
@@ -93,6 +93,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
         {stopFilename === "ничего" && (<Button disabled>Остановить</Button>)}
         <Countdown value={deadLine} onFinish={onFinish} />
       </Space>
+      <Divider />
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"

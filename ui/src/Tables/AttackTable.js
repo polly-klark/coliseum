@@ -22,6 +22,7 @@ const { Countdown } = Statistic;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
+  const [portBox, setPortBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
@@ -37,6 +38,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [disabledRadio, setDisabledRadio] = React.useState(true);
   const toggleDisabled = () => {
     setDisabledRadio(!disabledRadio);
+    setPortBox(!portBox);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -142,7 +144,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
 
   const styleRadio = {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
     gap: 8,
   };
 
@@ -162,33 +164,34 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       label: 'Порты',
       children: 
       <>
-        <Checkbox onChange={toggleDisabled}>Необходимо поменять</Checkbox>
+        <Checkbox onChange={toggleDisabled} checked={portBox}>Необходимо поменять</Checkbox>
         <Divider />
         <Radio.Group
-          defaultChecked={false} 
           disabled={disabledRadio}
           style={styleRadio}
           onChange={onChangeRadio}
           value={valueRadio}
           options={[
-            { value: 1, label: (
-              <>
-                TCP
-                {valueRadio === 1 && (
-                  <div>TCP Table</div>
-                )}
-              </>
-            ) },
-            { value: 2, label: (
-              <>
-                UDP
-                {valueRadio === 2 && (
-                  <div>UDP Table</div>
-                )}
-              </>
-            ) },
+            { value: 1, label: 'TCP' },
+            { value: 2, label: 'UDP' },
           ]}
         />
+        {valueRadio === 1 && (
+          <>
+            <Divider />
+            <Table
+              dataSource={fileData}
+              columns={columns}
+              rowKey="key"
+            />
+          </>
+        )}
+        {valueRadio === 2 && (
+          <>
+            <Divider />
+            <div>UDP Table</div>
+          </>
+        )}
       </>,
     },
   ];
@@ -278,6 +281,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setDisabledRadio(true);
     setValueRadio();
     setKeyOfTab("1");
+    setPortBox(false);
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
@@ -302,6 +306,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
         <Countdown value={deadLine} onFinish={onFinish} />
       </Space>
+      <Divider />
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"
