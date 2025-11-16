@@ -21,6 +21,7 @@ const { Countdown } = Statistic;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
+  const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
   const [deadLine, setDeadLine] = React.useState(0);
@@ -197,7 +198,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename);
     try {
-      const response = await axios.post(`http://192.168.42.129:8000/play_attack/${filename}`, {
+      const response = await axios.post(`http://192.168.42.129:8000/play_attack/${filename}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -274,6 +275,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
 
   const handleCancel = () => {
     setOpen(false);
+    setDisabledRadio(true);
+    setValueRadio();
+    setKeyOfTab("1");
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
@@ -373,7 +377,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           </Button>,
         ]}
       >
-        <Tabs defaultActiveKey="1" items={itemsOfTabs} />
+        <Tabs defaultActiveKey={keyOfTab} items={itemsOfTabs} />
       </Modal>
     </>
   );

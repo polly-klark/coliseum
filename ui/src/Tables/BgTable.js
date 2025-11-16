@@ -60,7 +60,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename);
     try {
-      const response = await axios.post(`http://192.168.42.129:8000/play_background/${filename}`, {
+      const response = await axios.post(`http://192.168.42.129:8000/play_background/${filename}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

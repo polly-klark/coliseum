@@ -568,7 +568,8 @@ async def send_file(filename: str):
             headers = {
             "filename": filename,
             }
-            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)          
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
+            response.raise_for_status()  # Проверка статуса ответа          
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
@@ -627,7 +628,8 @@ async def send_file(filename: str, user: User = Depends(get_current_user)):
             headers = {
             "filename": filename,
             }
-            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)        
+            response = await client.post(f"http://{IP_ADDDRES_FOR_START}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
+            response.raise_for_status()  # Проверка статуса ответа        
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
 
     except Exception as e:
