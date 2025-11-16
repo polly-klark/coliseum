@@ -12,6 +12,7 @@ import {
   Statistic,
   Tabs,
   Radio,
+  Divider,
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
@@ -161,9 +162,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       label: 'Порты',
       children: 
       <>
-        <Button type="primary" onClick={toggleDisabled}>
-          Необходимо поменять
-        </Button>
+        <Checkbox onChange={toggleDisabled}>Необходимо поменять</Checkbox>
+        <Divider />
         <Radio.Group
           defaultChecked={false} 
           disabled={disabledRadio}
@@ -377,7 +377,11 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           </Button>,
         ]}
       >
-        <Tabs defaultActiveKey={keyOfTab} items={itemsOfTabs} />
+        <Tabs
+          activeKey={keyOfTab}   // управляемая активная вкладка
+          onChange={(key) => setKeyOfTab(key)}  // обновление состояния при переключении
+          items={itemsOfTabs}
+        />
       </Modal>
     </>
   );
