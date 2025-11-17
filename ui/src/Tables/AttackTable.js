@@ -104,11 +104,11 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
 
   // Определение колонок таблицы
-  const columns = [
+  const ip_columns = [
     {
       title: "№ п/п",
-      dataIndex: "key",
-      key: "key",
+      dataIndex: "ip_key",
+      key: "ip_key",
       render: (_, __, index) => index + 1, // Порядковый номер строки
     },
     {
@@ -128,7 +128,45 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "ip",
     },
     {
-      title: "Новый IP-адрес данных",
+      title: "Новый IP-адрес",
+      dataIndex: "input",
+      key: "input",
+      render: (_, record) => (
+        <Input
+          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
+          value={inputValues[record.key] || ""}
+          onChange={(e) => handleInputChange(record.key, e.target.value)}
+          placeholder="Введите данные"
+        />
+      ),
+    },
+  ];
+  // Определение колонок таблицы
+  const tcp_columns = [
+    {
+      title: "№ п/п",
+      dataIndex: "tcp_key",
+      key: "tcp_key",
+      render: (_, __, index) => index + 1, // Порядковый номер строки
+    },
+    {
+      title: "Изменить",
+      dataIndex: "checkbox",
+      key: "checkbox",
+      render: (_, record) => (
+        <Checkbox
+          checked={activeRows[record.key] || false}
+          onChange={() => handleCheckboxChange(record.key)}
+        />
+      ),
+    },
+    {
+      title: "Исходный TCP-порт",
+      dataIndex: "tcp_port",
+      key: "tcp_port",
+    },
+    {
+      title: "Новый TCP-порт",
       dataIndex: "input",
       key: "input",
       render: (_, record) => (
@@ -155,8 +193,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       children:
         <Table
         dataSource={fileData}
-        columns={columns}
-        rowKey="key" // Уникальный ключ строки
+        columns={ip_columns}
+        rowKey="ip_key" // Уникальный ключ строки
         />,
     },
     {
@@ -181,7 +219,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             <Divider />
             <Table
               dataSource={fileData}
-              columns={columns}
+              columns={tcp_columns}
               rowKey="key"
             />
           </>
