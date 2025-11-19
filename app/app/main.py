@@ -339,7 +339,7 @@ async def ip_list(filename: str):
     sorted_ips = analyzer.get_sorted_ips()
     sorted_tcp_ports = analyzer.get_sorted_tcp_ports()
     sorted_udp_ports = analyzer.get_sorted_udp_ports()
-    result = ([{"ip_key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)] + [{"tcp_key": str(i+1), "tcp_port": str(tcp_port)} for i, tcp_port in enumerate(sorted_tcp_ports)] + [{"udp_key": str(i+1), "udp_port": udp_port} for i, udp_port in enumerate(sorted_udp_ports)])
+    result = ([{"ip_key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)] + [{"tcp_key": str(i+1), "tcp_port": str(tcp_port)} for i, tcp_port in enumerate(sorted_tcp_ports)] + [{"udp_key": str(i+1), "udp_port": str(udp_port)} for i, udp_port in enumerate(sorted_udp_ports)])
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)
     return result

@@ -179,6 +179,44 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       ),
     },
   ];
+  // Определение колонок таблицы
+  const udp_columns = [
+    {
+      title: "№ п/п",
+      dataIndex: "udp_key",
+      key: "udp_key",
+      render: (_, __, index) => index + 1, // Порядковый номер строки
+    },
+    {
+      title: "Изменить",
+      dataIndex: "checkbox",
+      key: "checkbox",
+      render: (_, record) => (
+        <Checkbox
+          checked={activeRows[record.key] || false}
+          onChange={() => handleCheckboxChange(record.key)}
+        />
+      ),
+    },
+    {
+      title: "Исходный UDP-порт",
+      dataIndex: "udp_port",
+      key: "udp_port",
+    },
+    {
+      title: "Новый UDP-порт",
+      dataIndex: "input",
+      key: "input",
+      render: (_, record) => (
+        <Input
+          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
+          value={inputValues[record.key] || ""}
+          onChange={(e) => handleInputChange(record.key, e.target.value)}
+          placeholder="Введите данные"
+        />
+      ),
+    },
+  ];
 
   const styleRadio = {
     display: 'flex',
@@ -186,13 +224,17 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     gap: 8,
   };
 
+  const ipData = React.useMemo(() => fileData.filter(item => item.ip_key), [fileData]);
+  const tcpData = React.useMemo(() => fileData.filter(item => item.tcp_key), [fileData]);
+  const udpData = React.useMemo(() => fileData.filter(item => item.udp_key), [fileData]);
+
   const itemsOfTabs = [
     {
       key: '1',
       label: 'IP-адреса',
       children:
         <Table
-        dataSource={fileData}
+        dataSource={ipData}
         columns={ip_columns}
         rowKey="ip_key" // Уникальный ключ строки
         />,
@@ -218,16 +260,20 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           <>
             <Divider />
             <Table
-              dataSource={fileData}
+              dataSource={tcpData}
               columns={tcp_columns}
-              rowKey="key"
+              rowKey="tcp_key"
             />
           </>
         )}
         {valueRadio === 2 && (
           <>
             <Divider />
-            <div>UDP Table</div>
+            <Table
+              dataSource={udpData}
+              columns={udp_columns}
+              rowKey="udp_key"
+            />
           </>
         )}
       </>,
@@ -308,6 +354,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       );
       setFileData(response.data);
       console.log(response.data);
+      console.log(ipData);
+      console.log(tcpData);
+      console.log(udpData);
     } catch (error) {
       console.error("Ошибка при получении данных:", error);
       setFileData([]); // В случае ошибки устанавливаем пустой массив
