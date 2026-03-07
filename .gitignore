@@ -7,3 +7,5 @@ app/app/venv/
 venv/
 log/
 ui/package-lock.json
+app/app/app.log
+app/app/data/db
