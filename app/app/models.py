@@ -46,11 +46,11 @@ class IpPair(BaseModel):
 
 class TcpPortPair(BaseModel):
     key: str
-    port: int
+    tcp_port: str  # ← port → tcp_port + str вместо int
 
 class UdpPortPair(BaseModel):
     key: str
-    port: int
+    udp_port: str  # ← port → udp_port + str вместо int
 
 class ModificationRequest(BaseModel):
     ip_items: Optional[List[IpPair]] = None

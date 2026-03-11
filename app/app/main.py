@@ -348,12 +348,14 @@ async def ip_list(filename: str):
 @app.post("/modification/{filename}")
 async def file_modification(filename: str, request_data: ModificationRequest, user: User = Depends(get_current_user)):
     changed_ips = getattr(request_data, "ip_items", None)
-    changed_tcp_ports = getattr(request_data, "tcp_items", None)
-    changed_udp_ports = getattr(request_data, "udp_items", None)
+    changed_tcp_ports = getattr(request_data, "tcp_port_items", None)
+    changed_udp_ports = getattr(request_data, "udp_port_items", None)
     # Можно добавить другие поля замены в будущем
     db = clientDB[f"{user.username}_m"]
     fs = AsyncIOMotorGridFSBucket(db)
-    logger.info(f"Получены данные: filename: {filename}, items: {changed_ips}")
+    logger.info(f"Получены данные: filename: {filename}, ip: {changed_ips}, tcp: {changed_tcp_ports}, udp: {changed_udp_ports}")
+    temp_file_path = None
+    modified_temp_file_path = None
     # Открываем поток для чтения файла из GridFS по имени
     try:
         grid_out = await fsa.open_download_stream_by_name(filename)
@@ -387,9 +389,9 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
 
         if changed_ips:
             for item in changed_ips:
-                key = int(item["key"].split('_')[1]) - 1  # "ip_1" → 0
-                old_ip = sorted_ips[key]
-                new_ip = item["ip"]
+                key_num = int(item.key.split('_')[1]) - 1      # ← item.key (Pydantic)
+                old_ip = sorted_ips[key_num]
+                new_ip = item.ip
                 for packet in packets:
                     if packet.haslayer(scapy.IP):
                         if packet["IP"].src == old_ip:
@@ -400,28 +402,28 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Замена TCP портов
         if changed_tcp_ports:
             for item in changed_tcp_ports:
-                key = int(item["key"].split('_')[1]) - 1  # "tcp_1" → 0
-                old_port = sorted_tcp_ports[key]
-                new_port = item["tcp_port"]  # ✅ Правильное название поля
+                key_num = int(item.key.split('_')[1]) - 1  # "tcp_1" → 0
+                old_port = sorted_tcp_ports[key_num]
+                new_port = item.tcp_port  # ✅ Правильное название поля
                 for packet in packets:
                     if packet.haslayer(scapy.TCP):
-                        if packet["TCP"].sport == old_port:
-                            packet["TCP"].sport = new_port
-                        if packet["TCP"].dport == old_port:
-                            packet["TCP"].dport = new_port
+                        if packet["TCP"].sport == int(old_port):
+                            packet["TCP"].sport = int(new_port)  # ← int(new_port)!
+                        if packet["TCP"].dport == int(old_port):
+                            packet["TCP"].dport = int(new_port)
 
         # Замена UDP портов
         if changed_udp_ports:
             for item in changed_udp_ports:
-                key = int(item["key"].split('_')[1]) - 1  # "udp_1" → 0
-                old_port = sorted_udp_ports[key]
-                new_port = item["udp_port"]  # ✅ Правильное название поля
+                key_num = int(item.key.split('_')[1]) - 1  # "tcp_1" → 0
+                old_port = sorted_udp_ports[key_num]
+                new_port = item.udp_port  # ✅ Правильное название поля
                 for packet in packets:
                     if packet.haslayer(scapy.UDP):
-                        if packet["UDP"].sport == old_port:
-                            packet["UDP"].sport = new_port
-                        if packet["UDP"].dport == old_port:
-                            packet["UDP"].dport = new_port
+                        if packet["UDP"].sport == int(old_port):
+                            packet["UDP"].sport = int(new_port)  # ← int(new_port)!
+                        if packet["UDP"].dport == int(old_port):
+                            packet["UDP"].dport = int(new_port)
 
         for packet in packets:
             if packet.haslayer(scapy.IP):

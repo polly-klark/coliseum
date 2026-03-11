@@ -83,25 +83,35 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         
         if (!record) return null;
         
-        // Определяем тип по ключу
-        if (key.startsWith('ip_')) {
-          return {
-            key,
-            ip: inputValues[key] || record.ip,  // Новый IP или старый
-          };
-        } else if (key.startsWith('tcp_')) {
-          return {
-            key,
-            tcp_port: inputValues[key] || record.tcp_port,
-          };
-        } else if (key.startsWith('udp_')) {
-          return {
-            key,
-            udp_port: inputValues[key] || record.udp_port,
-          };
-        }
-      })
-      .filter(Boolean); // Убираем null
+        // ✅ Извлекаем ЧИСЛОВОЙ индекс из ключа
+      const match = key.match(/(\w+)_(\d+)/);  // ip_1, tcp_2, udp_0
+      if (!match) return null;
+      
+      const type = match[1];  // "ip", "tcp", "udp"
+      const index = parseInt(match[2]);  // 1, 2, 0
+      
+      if (type === 'ip') {
+        return {
+          key,  // "ip_1" — для логов
+          index,  // 1 — для бэкенда
+          ip: inputValues[key] || record.ip,
+        };
+      } else if (type === 'tcp') {
+        return {
+          key,
+          index,
+          tcp_port: inputValues[key] || record.tcp_port,
+        };
+      } else if (type === 'udp') {
+        return {
+          key, 
+          index,
+          udp_port: inputValues[key] || record.udp_port,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean); // Убираем null
     
     console.log("Активные строки:", result);
     try {
@@ -109,12 +119,13 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         `http://127.0.0.1:8000/modification/${filename}`,
         {
           ip_items: result.filter(item => item.ip),     // Только IP
-          tcp_items: result.filter(item => item.tcp_port),  // Только TCP
-          udp_items: result.filter(item => item.udp_port),  // Только UDP
+          tcp_port_items: result.filter(item => item.tcp_port),  // Только TCP
+          udp_port_items: result.filter(item => item.udp_port),  // Только UDP
         },
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         }
       );
@@ -147,8 +158,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "checkbox",
       render: (_, record) => (
         <Checkbox
-        checked={activeRows[record.ip_key] || false}  // ← record.ip_key!
-        onChange={() => handleCheckboxChange(record.ip_key)}  // ← record.ip_key!
+          checked={activeRows[record.ip_key] || false}  // ← record.ip_key!
+          onChange={() => handleCheckboxChange(record.ip_key)}  // ← record.ip_key!
         />
       ),
     },
@@ -163,9 +174,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "input",
       render: (_, record) => (
         <Input
-        disabled={!activeRows[record.ip_key]}  // ← record.ip_key!
-        value={inputValues[record.ip_key] || ""}
-        onChange={(e) => handleInputChange(record.ip_key, e.target.value)}
+          disabled={!activeRows[record.ip_key]}  // ← record.ip_key!
+          value={inputValues[record.ip_key] || ""}
+          onChange={(e) => handleInputChange(record.ip_key, e.target.value)}
           placeholder="Введите данные"
         />
       ),
@@ -382,20 +393,31 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // ✅ ГЕНЕРИРУЕМ УНИКАЛЬНЫЕ КЛЮЧИ ПРЯМО В fileData
-    const fileDataWithUniqueKeys = response.data.map((item, globalIndex) => {
-      let type = '';
-      if (item.ip) type = 'ip';
-      else if (item.tcp_port) type = 'tcp'; 
-      else if (item.udp_port) type = 'udp';
-      
-      return {
-        ...item,
-        // Глобально уникальные ключи: тип_глобальный_индекс
-        ip_key: item.ip ? `ip_${globalIndex}` : undefined,
-        tcp_key: item.tcp_port ? `tcp_${globalIndex}` : undefined,
-        udp_key: item.udp_port ? `udp_${globalIndex}` : undefined,
-      };
+      // ✅ ОТДЕЛЬНЫЕ СЧЁТЧИКИ ДЛЯ КАЖДОГО ТИПА
+      let ipIndex = 0;
+      let tcpIndex = 0;
+      let udpIndex = 0;
+      const fileDataWithUniqueKeys = response.data.map((item) => {
+        if (item.ip) {
+          // IP — свой счётчик
+          return {
+            ...item,
+            ip_key: `ip_${ipIndex++}`,  // ip_0, ip_1, ip_2...
+          };
+        } else if (item.tcp_port) {
+          // TCP — свой счётчик  
+          return {
+            ...item,
+            tcp_key: `tcp_${tcpIndex++}`,  // tcp_0, tcp_1, tcp_2...
+          }; 
+        } else if (item.udp_port) {
+          // UDP — свой счётчик
+          return {
+            ...item,
+            udp_key: `udp_${udpIndex++}`,  // udp_0, udp_1, udp_2...
+          };
+        }
+      return item;
     });
 
     setFileData(fileDataWithUniqueKeys);
