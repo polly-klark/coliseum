@@ -348,8 +348,8 @@ async def ip_list(filename: str):
 @app.post("/modification/{filename}")
 async def file_modification(filename: str, request_data: ModificationRequest, user: User = Depends(get_current_user)):
     changed_ips = getattr(request_data, "ip_items", None)
-    changed_tcp_ports = getattr(request_data, "tcp_port_items", None)
-    changed_udp_ports = getattr(request_data, "udp_port_items", None)
+    changed_tcp_ports = getattr(request_data, "tcp_items", None)
+    changed_udp_ports = getattr(request_data, "udp_items", None)
     # Можно добавить другие поля замены в будущем
     db = clientDB[f"{user.username}_m"]
     fs = AsyncIOMotorGridFSBucket(db)
@@ -387,9 +387,9 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
 
         if changed_ips:
             for item in changed_ips:
-                key = int(item.key) - 1   # Получение значения ключа
-                old_ip = sorted_ips[key]  # Получение старого IP из списка
-                new_ip = item.ip    # Получение IP-адреса
+                key = int(item["key"].split('_')[1]) - 1  # "ip_1" → 0
+                old_ip = sorted_ips[key]
+                new_ip = item["ip"]
                 for packet in packets:
                     if packet.haslayer(scapy.IP):
                         if packet["IP"].src == old_ip:
@@ -400,9 +400,9 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Замена TCP портов
         if changed_tcp_ports:
             for item in changed_tcp_ports:
-                key = int(item.key) - 1
+                key = int(item["key"].split('_')[1]) - 1  # "tcp_1" → 0
                 old_port = sorted_tcp_ports[key]
-                new_port = item.port
+                new_port = item["tcp_port"]  # ✅ Правильное название поля
                 for packet in packets:
                     if packet.haslayer(scapy.TCP):
                         if packet["TCP"].sport == old_port:
@@ -413,9 +413,9 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Замена UDP портов
         if changed_udp_ports:
             for item in changed_udp_ports:
-                key = int(item.key) - 1
+                key = int(item["key"].split('_')[1]) - 1  # "udp_1" → 0
                 old_port = sorted_udp_ports[key]
-                new_port = item.port
+                new_port = item["udp_port"]  # ✅ Правильное название поля
                 for packet in packets:
                     if packet.haslayer(scapy.UDP):
                         if packet["UDP"].sport == old_port:

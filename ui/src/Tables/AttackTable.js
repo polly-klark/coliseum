@@ -75,16 +75,42 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const getActiveRows = async (filename) => {
     const result = Object.keys(activeRows)
       .filter((key) => activeRows[key])
-      .map((key) => ({
-        key,
-        ip: inputValues[key] || fileData.find((item) => item.key === key).ip,
-      }));
+      .map((key) => {
+        // Ищем запись по любому из ключей
+        const record = fileData.find((item) => 
+          item.ip_key === key || item.tcp_key === key || item.udp_key === key
+        );
+        
+        if (!record) return null;
+        
+        // Определяем тип по ключу
+        if (key.startsWith('ip_')) {
+          return {
+            key,
+            ip: inputValues[key] || record.ip,  // Новый IP или старый
+          };
+        } else if (key.startsWith('tcp_')) {
+          return {
+            key,
+            tcp_port: inputValues[key] || record.tcp_port,
+          };
+        } else if (key.startsWith('udp_')) {
+          return {
+            key,
+            udp_port: inputValues[key] || record.udp_port,
+          };
+        }
+      })
+      .filter(Boolean); // Убираем null
+    
     console.log("Активные строки:", result);
     try {
       await axios.post(
         `http://127.0.0.1:8000/modification/${filename}`,
         {
-          ip_items: result,
+          ip_items: result.filter(item => item.ip),     // Только IP
+          tcp_items: result.filter(item => item.tcp_port),  // Только TCP
+          udp_items: result.filter(item => item.udp_port),  // Только UDP
         },
         {
           headers: {
@@ -100,6 +126,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       message.error(`Ошибка при модификации файла "${filename}"`);
     }
     setOpen(false);
+    setDisabledRadio(true);
+    setValueRadio();
+    setKeyOfTab("1");
+    setPortBox(false);
     resetForm();
   };
 
@@ -117,8 +147,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "checkbox",
       render: (_, record) => (
         <Checkbox
-          checked={activeRows[record.key] || false}
-          onChange={() => handleCheckboxChange(record.key)}
+        checked={activeRows[record.ip_key] || false}  // ← record.ip_key!
+        onChange={() => handleCheckboxChange(record.ip_key)}  // ← record.ip_key!
         />
       ),
     },
@@ -133,9 +163,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "input",
       render: (_, record) => (
         <Input
-          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
-          value={inputValues[record.key] || ""}
-          onChange={(e) => handleInputChange(record.key, e.target.value)}
+        disabled={!activeRows[record.ip_key]}  // ← record.ip_key!
+        value={inputValues[record.ip_key] || ""}
+        onChange={(e) => handleInputChange(record.ip_key, e.target.value)}
           placeholder="Введите данные"
         />
       ),
@@ -155,8 +185,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "checkbox",
       render: (_, record) => (
         <Checkbox
-          checked={activeRows[record.key] || false}
-          onChange={() => handleCheckboxChange(record.key)}
+          checked={activeRows[record.tcp_key] || false}
+          onChange={() => handleCheckboxChange(record.tcp_key)}
         />
       ),
     },
@@ -171,9 +201,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "input",
       render: (_, record) => (
         <Input
-          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
-          value={inputValues[record.key] || ""}
-          onChange={(e) => handleInputChange(record.key, e.target.value)}
+          disabled={!activeRows[record.tcp_key]} // Input активен только если чекбокс включен
+          value={inputValues[record.tcp_key] || ""}
+          onChange={(e) => handleInputChange(record.tcp_key, e.target.value)}
           placeholder="Введите данные"
         />
       ),
@@ -193,8 +223,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "checkbox",
       render: (_, record) => (
         <Checkbox
-          checked={activeRows[record.key] || false}
-          onChange={() => handleCheckboxChange(record.key)}
+          checked={activeRows[record.udp_key] || false}
+          onChange={() => handleCheckboxChange(record.udp_key)}
         />
       ),
     },
@@ -209,9 +239,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: "input",
       render: (_, record) => (
         <Input
-          disabled={!activeRows[record.key]} // Input активен только если чекбокс включен
-          value={inputValues[record.key] || ""}
-          onChange={(e) => handleInputChange(record.key, e.target.value)}
+          disabled={!activeRows[record.udp_key]} // Input активен только если чекбокс включен
+          value={inputValues[record.udp_key] || ""}
+          onChange={(e) => handleInputChange(record.udp_key, e.target.value)}
           placeholder="Введите данные"
         />
       ),
@@ -352,11 +382,30 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setFileData(response.data);
-      console.log(response.data);
-      console.log(ipData);
-      console.log(tcpData);
-      console.log(udpData);
+      // ✅ ГЕНЕРИРУЕМ УНИКАЛЬНЫЕ КЛЮЧИ ПРЯМО В fileData
+    const fileDataWithUniqueKeys = response.data.map((item, globalIndex) => {
+      let type = '';
+      if (item.ip) type = 'ip';
+      else if (item.tcp_port) type = 'tcp'; 
+      else if (item.udp_port) type = 'udp';
+      
+      return {
+        ...item,
+        // Глобально уникальные ключи: тип_глобальный_индекс
+        ip_key: item.ip ? `ip_${globalIndex}` : undefined,
+        tcp_key: item.tcp_port ? `tcp_${globalIndex}` : undefined,
+        udp_key: item.udp_port ? `udp_${globalIndex}` : undefined,
+      };
+    });
+
+    setFileData(fileDataWithUniqueKeys);
+    setActiveRows({});
+    setInputValues({});
+
+      // console.log(response.data);
+      // console.log(ipData);
+      // console.log(tcpData);
+      // console.log(udpData);
     } catch (error) {
       console.error("Ошибка при получении данных:", error);
       setFileData([]); // В случае ошибки устанавливаем пустой массив
