@@ -82,7 +82,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     console.log("Активные строки:", result);
     try {
       await axios.post(
-        `http://192.168.42.129:8000/modification/${filename}`,
+        `http://127.0.0.1:8000/modification/${filename}`,
         {
           ip_items: result,
         },
@@ -285,7 +285,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     console.log(`Проигрывается файл ${filename}`);
     setStopFilename(filename);
     try {
-      const response = await axios.post(`http://192.168.42.129:8000/play_attack/${filename}`, null, {
+      const response = await axios.post(`http://127.0.0.1:8000/play_attack/${filename}`, null, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -304,7 +304,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
     try {
-      await axios.delete(`http://192.168.42.129:8000/attack/${filename}`, {
+      await axios.delete(`http://127.0.0.1:8000/attack/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -322,7 +322,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке downloadbackground
 
     try {
-      const response = await axios.get(`http://192.168.42.129:8000/downloadattack/${filename}`, {
+      const response = await axios.get(`http://127.0.0.1:8000/downloadattack/${filename}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
@@ -347,7 +347,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setSelectedFilename(filename);
     try {
       const response = await axios.get(
-        `http://192.168.42.129:8000/modification_list/${filename}`,
+        `http://127.0.0.1:8000/modification_list/${filename}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -374,7 +374,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
   const handleStop = async () => {
     try {
-      await axios.post(`http://192.168.42.129:8000/stop`);
+      await axios.post(`http://127.0.0.1:8000/stop`);
       message.success(`Процесс успешно остановлен`);
       setDeadLine(0);
     } catch (error) {

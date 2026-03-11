@@ -49,7 +49,7 @@ fsb = AsyncIOMotorGridFSBucket(bg)
 SECRET_KEY = secrets.token_hex(32)  # Генерирует 64-значный шестнадцатеричный ключ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-IP_ADDDRES_FOR_START = "192.168.42.129"
+IP_ADDDRES_FOR_START = "127.0.0.1"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
