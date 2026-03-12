@@ -23,6 +23,7 @@ const { Countdown } = Statistic;
 const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
+  const [IPBox, setIPBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
@@ -36,9 +37,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setValueRadio(e.target.value);
   };
   const [disabledRadio, setDisabledRadio] = React.useState(true);
-  const toggleDisabled = () => {
+  const toggleDisabledPort = () => {
     setDisabledRadio(!disabledRadio);
     setPortBox(!portBox);
+  };
+  const toggleDisabledIP = () => {
+    setIPBox(!IPBox);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -274,18 +278,24 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       key: '1',
       label: 'IP-адреса',
       children:
-        <Table
-        dataSource={ipData}
-        columns={ip_columns}
-        rowKey="ip_key" // Уникальный ключ строки
-        />,
+      <>
+        <Checkbox onChange={toggleDisabledIP} checked={IPBox}>Необходимо поменять</Checkbox>
+        <Divider />
+        {IPBox && (
+          <Table
+          dataSource={ipData}
+          columns={ip_columns}
+          rowKey="ip_key" // Уникальный ключ строки
+          />
+        )}
+      </>
     },
     {
       key: '2',
       label: 'Порты',
       children: 
       <>
-        <Checkbox onChange={toggleDisabled} checked={portBox}>Необходимо поменять</Checkbox>
+        <Checkbox onChange={toggleDisabledPort} checked={portBox}>Необходимо поменять</Checkbox>
         <Divider />
         <Radio.Group
           disabled={disabledRadio}

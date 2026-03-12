@@ -52,10 +52,15 @@ class UdpPortPair(BaseModel):
     key: str
     udp_port: str  # ← port → udp_port + str вместо int
 
+class MacPair(BaseModel):
+    key: str
+    mac: str
+
 class ModificationRequest(BaseModel):
     ip_items: Optional[List[IpPair]] = None
     tcp_port_items: Optional[List[TcpPortPair]] = None
     udp_port_items: Optional[List[UdpPortPair]] = None
+    mac_items: Optional[List[MacPair]] = None
     # Можно добавлять другие списки замены по мере необходимости
 
 def hash_password(password: str) -> str:
