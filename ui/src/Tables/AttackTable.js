@@ -30,6 +30,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
     });
   };
+  const [newFilename, setNewFilename] = useState(selectedFilename);
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
@@ -423,8 +424,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         <Divider />
         <Input
         disabled={!nameBox}
-        value={selectedFilename}
+        value={newFilename}
         style={{ width: 200 }}
+        onChange={(e) => setNewFilename(e.target.value)}
         />
       </>
     },
@@ -653,6 +655,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setIPBox(false);
     setMACBox(false);
     setTTLBox(false);
+    setNameBox(false);
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
