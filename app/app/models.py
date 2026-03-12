@@ -49,19 +49,19 @@ class User(BaseModel):
     role: str  # Добавляем поле для роли
 
 class IpPair(BaseModel):
-    key: str
+    key: int
     ip: str
 
 class TcpPortPair(BaseModel):
-    key: str
+    key: int
     tcp_port: str  # ← port → tcp_port + str вместо int
 
 class UdpPortPair(BaseModel):
-    key: str
+    key: int
     udp_port: str  # ← port → udp_port + str вместо int
 
 class MacPair(BaseModel):
-    key: str
+    key: int
     mac: str
 
 class ModificationRequest(BaseModel):

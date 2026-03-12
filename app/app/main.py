@@ -393,7 +393,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
 
         if changed_ips:
             for item in changed_ips:
-                key_num = int(item.key.split('_')[1]) - 1      # ← item.key (Pydantic)
+                key_num = item.key
                 old_ip = sorted_ips[key_num]
                 new_ip = item.ip
                 for packet in packets:
@@ -406,7 +406,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Замена TCP портов
         if changed_tcp_ports:
             for item in changed_tcp_ports:
-                key_num = int(item.key.split('_')[1]) - 1  # "tcp_1" → 0
+                key_num = item.key
                 old_port = sorted_tcp_ports[key_num]
                 new_port = item.tcp_port  # ✅ Правильное название поля
                 for packet in packets:
@@ -419,7 +419,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Замена UDP портов
         if changed_udp_ports:
             for item in changed_udp_ports:
-                key_num = int(item.key.split('_')[1]) - 1  # "tcp_1" → 0
+                key_num = item.key
                 old_port = sorted_udp_ports[key_num]
                 new_port = item.udp_port  # ✅ Правильное название поля
                 for packet in packets:
@@ -431,7 +431,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
 
         if changed_macs:
             for item in changed_macs:
-                key_num = int(item.key.split('_')[1]) - 1
+                key_num = item.key
                 old_mac = sorted_macs[key_num]  # analyzer.get_sorted_macs()
                 new_mac = item.mac
                 for packet in packets:

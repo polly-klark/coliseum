@@ -135,14 +135,30 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     .filter(Boolean); // Убираем null
     
     console.log("Активные строки:", result);
+    console.log(`ip: ${JSON.stringify(result.filter(item => item.ip).map(item => ({
+      key: parseInt(item.key.split('_')[1]),
+      ip: item.ip
+    })), null, 2)}`);  
     try {
       await axios.post(
         `http://127.0.0.1:8000/modification/${filename}`,
         {
-          ip_items: result.filter(item => item.ip),     // Только IP
-          tcp_port_items: result.filter(item => item.tcp_port),  // Только TCP
-          udp_port_items: result.filter(item => item.udp_port),  // Только UDP
-          mac_items: result.filter(item => item.mac),
+          ip_items: result.filter(item => item.ip).map(item => ({
+            key: parseInt(item.key.split('_')[1]),  // 0, 3, 10
+            ip: item.ip  // Новое значение!
+          })),
+          tcp_port_items: result.filter(item => item.tcp_port).map(item => ({
+            key: parseInt(item.key.split('_')[1]),
+            tcp_port: item.tcp_port
+          })),
+          udp_port_items: result.filter(item => item.udp_port).map(item => ({
+            key: parseInt(item.key.split('_')[1]),
+            udp_port: item.udp_port
+          })),
+          mac_items: result.filter(item => item.mac).map(item => ({
+            key: parseInt(item.key.split('_')[1]),
+            mac: item.mac
+          })),
         },
         {
           headers: {
