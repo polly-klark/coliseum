@@ -13,6 +13,7 @@ import {
   Tabs,
   Radio,
   Divider,
+  notification,
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
@@ -21,11 +22,20 @@ const { Column } = Table;
 const { Countdown } = Statistic;
 
 const AttackTable = ({ data, user, token, fetchData }) => {
+  const [api, contextHolder] = notification.useNotification();
+  const openNotificationWithIcon = type => {
+    api[type]({
+      message: 'Информация',
+      description:
+        'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
+    });
+  };
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
   const [MACBox, setMACBox] = React.useState(false);
   const [TTLBox, setTTLBox] = React.useState(false);
+  const [nameBox, setNameBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
@@ -51,6 +61,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
   const toggleDisabledTTL = () => {
     setTTLBox(!TTLBox);
+  };
+  const toggleDisabledName = () => {
+    setNameBox(!nameBox);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -403,6 +416,20 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const itemsOfTabs = [
     {
       key: '1',
+      label: 'Имя файла',
+      children:
+      <>
+        <Checkbox onChange={toggleDisabledName} checked={nameBox}>Необходимо поменять</Checkbox>
+        <Divider />
+        <Input
+        disabled={!nameBox}
+        value={selectedFilename}
+        style={{ width: 200 }}
+        />
+      </>
+    },
+    {
+      key: '2',
       label: 'IP-адреса',
       children:
       <>
@@ -418,7 +445,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </>
     },
     {
-      key: '2',
+      key: '3',
       label: 'Порты',
       children: 
       <>
@@ -457,7 +484,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </>,
     },
     {
-      key: '3',
+      key: '4',
       label: 'MAC-адреса',
       children:
       <>
@@ -473,7 +500,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </>
     },
     {
-      key: '4',
+      key: '5',
       label: 'TTL',
       children:
       <>
@@ -642,6 +669,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
 
   return (
     <>
+      {contextHolder}
       <Space>
       <p>Сейчас проигрывается {stopFilename}</p>
         {stopFilename !== "ничего" && (
@@ -680,7 +708,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
               </a>
               <a
                 href="#"
-                onClick={(event) => handleModification(record.filename, event)}
+                onClick={(event) => { 
+                  handleModification(record.filename, event);
+                  openNotificationWithIcon('info');
+                }}
               >
                 Модифицировать
               </a>
