@@ -24,6 +24,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
+  const [MACBox, setMACBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
@@ -43,6 +44,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
   const toggleDisabledIP = () => {
     setIPBox(!IPBox);
+  };
+  const toggleDisabledMAC = () => {
+    setMACBox(!MACBox);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -82,8 +86,15 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       .map((key) => {
         // Ищем запись по любому из ключей
         const record = fileData.find((item) => 
-          item.ip_key === key || item.tcp_key === key || item.udp_key === key
+          item.ip_key === key || item.tcp_key === key || item.udp_key === key || item.mac_key === key
         );
+
+        console.log("🔍 Все ключи fileData:", fileData.map(item => ({
+          ip_key: item.ip_key, 
+          tcp_key: item.tcp_key, 
+          udp_key: item.udp_key, 
+          mac_key: item.mac_key  // ← Проверь есть ли!
+        })));
         
         if (!record) return null;
         
@@ -112,6 +123,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           index,
           udp_port: inputValues[key] || record.udp_port,
         };
+      } else if (type === 'mac') {  // ✅ Новый блок
+        return {
+          key,
+          index,
+          mac: inputValues[key] || record.mac,
+        };
       }
       return null;
     })
@@ -125,6 +142,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           ip_items: result.filter(item => item.ip),     // Только IP
           tcp_port_items: result.filter(item => item.tcp_port),  // Только TCP
           udp_port_items: result.filter(item => item.udp_port),  // Только UDP
+          mac_items: result.filter(item => item.mac),
         },
         {
           headers: {
@@ -145,6 +163,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setValueRadio();
     setKeyOfTab("1");
     setPortBox(false);
+    setIPBox(false);
+    setMACBox(false);
     resetForm();
   };
 
@@ -262,6 +282,43 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       ),
     },
   ];
+  const mac_columns = [
+    {
+      title: "№ п/п",
+      dataIndex: "mac_key",
+      key: "mac_key",
+      render: (_, __, index) => index + 1, // Порядковый номер строки
+    },
+    {
+      title: "Изменить",
+      dataIndex: "checkbox",
+      key: "checkbox",
+      render: (_, record) => (
+        <Checkbox
+          checked={activeRows[record.mac_key] || false}  // ← record.ip_key!
+          onChange={() => handleCheckboxChange(record.mac_key)}  // ← record.ip_key!
+        />
+      ),
+    },
+    {
+      title: "Исходный MAC-адрес",
+      dataIndex: "mac",
+      key: "mac",
+    },
+    {
+      title: "Новый IP-адрес",
+      dataIndex: "input",
+      key: "input",
+      render: (_, record) => (
+        <Input
+          disabled={!activeRows[record.mac_key]}  // ← record.ip_key!
+          value={inputValues[record.mac_key] || ""}
+          onChange={(e) => handleInputChange(record.mac_key, e.target.value)}
+          placeholder="Введите данные"
+        />
+      ),
+    },
+  ];
 
   const styleRadio = {
     display: 'flex',
@@ -272,6 +329,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const ipData = React.useMemo(() => fileData.filter(item => item.ip_key), [fileData]);
   const tcpData = React.useMemo(() => fileData.filter(item => item.tcp_key), [fileData]);
   const udpData = React.useMemo(() => fileData.filter(item => item.udp_key), [fileData]);
+  const macData = React.useMemo(() => fileData.filter(item => item.mac_key), [fileData]);
 
   const itemsOfTabs = [
     {
@@ -328,6 +386,22 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           </>
         )}
       </>,
+    },
+    {
+      key: '3',
+      label: 'MAC-адреса',
+      children:
+      <>
+        <Checkbox onChange={toggleDisabledMAC} checked={MACBox}>Необходимо поменять</Checkbox>
+        <Divider />
+        {MACBox && (
+          <Table
+          dataSource={macData}
+          columns={mac_columns}
+          rowKey="mac_key" // Уникальный ключ строки
+          />
+        )}
+      </>
     },
   ];
 
@@ -407,6 +481,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       let ipIndex = 0;
       let tcpIndex = 0;
       let udpIndex = 0;
+      let macIndex = 0;
       const fileDataWithUniqueKeys = response.data.map((item) => {
         if (item.ip) {
           // IP — свой счётчик
@@ -425,6 +500,12 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           return {
             ...item,
             udp_key: `udp_${udpIndex++}`,  // udp_0, udp_1, udp_2...
+          };
+        } else if (item.mac) {
+          // UDP — свой счётчик
+          return {
+            ...item,
+            mac_key: `mac_${macIndex++}`,  // udp_0, udp_1, udp_2...
           };
         }
       return item;

@@ -340,7 +340,8 @@ async def ip_list(filename: str):
     sorted_ips = analyzer.get_sorted_ips()
     sorted_tcp_ports = analyzer.get_sorted_tcp_ports()
     sorted_udp_ports = analyzer.get_sorted_udp_ports()
-    result = ([{"ip_key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)] + [{"tcp_key": str(i+1), "tcp_port": str(tcp_port)} for i, tcp_port in enumerate(sorted_tcp_ports)] + [{"udp_key": str(i+1), "udp_port": str(udp_port)} for i, udp_port in enumerate(sorted_udp_ports)])
+    sorted_macs = analyzer.get_sorted_macs()
+    result = ([{"ip_key": str(i+1), "ip": ip} for i, ip in enumerate(sorted_ips)] + [{"tcp_key": str(i+1), "tcp_port": str(tcp_port)} for i, tcp_port in enumerate(sorted_tcp_ports)] + [{"udp_key": str(i+1), "udp_port": str(udp_port)} for i, udp_port in enumerate(sorted_udp_ports)] + [{"mac_key": str(i+1), "mac": mac} for i, mac in enumerate(sorted_macs)])
     if os.path.exists(temp_file_path):
         os.remove(temp_file_path)
     return result
@@ -351,10 +352,11 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
     changed_ips = getattr(request_data, "ip_items", None)
     changed_tcp_ports = getattr(request_data, "tcp_port_items", None)
     changed_udp_ports = getattr(request_data, "udp_port_items", None)
+    changed_macs = getattr(request_data, "mac_items", None)
     # Можно добавить другие поля замены в будущем
     db = clientDB[f"{user.username}_m"]
     fs = AsyncIOMotorGridFSBucket(db)
-    logger.info(f"Получены данные: filename: {filename}, ip: {changed_ips}, tcp: {changed_tcp_ports}, udp: {changed_udp_ports}")
+    logger.info(f"Получены данные: filename: {filename}, ip: {changed_ips}, tcp: {changed_tcp_ports}, udp: {changed_udp_ports}, mac: {changed_macs}")
     temp_file_path = None
     modified_temp_file_path = None
     # Открываем поток для чтения файла из GridFS по имени
@@ -387,6 +389,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         sorted_ips = analyzer.get_sorted_ips()
         sorted_tcp_ports = analyzer.get_sorted_tcp_ports()
         sorted_udp_ports = analyzer.get_sorted_udp_ports()
+        sorted_macs = analyzer.get_sorted_macs()
 
         if changed_ips:
             for item in changed_ips:
@@ -425,6 +428,18 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
                             packet["UDP"].sport = int(new_port)  # ← int(new_port)!
                         if packet["UDP"].dport == int(old_port):
                             packet["UDP"].dport = int(new_port)
+
+        if changed_macs:
+            for item in changed_macs:
+                key_num = int(item.key.split('_')[1]) - 1
+                old_mac = sorted_macs[key_num]  # analyzer.get_sorted_macs()
+                new_mac = item.mac
+                for packet in packets:
+                    if packet.haslayer(scapy.Ether):
+                        if packet["Ether"].src == old_mac:
+                            packet["Ether"].src = new_mac
+                        if packet["Ether"].dst == old_mac:
+                            packet["Ether"].dst = new_mac
 
         for packet in packets:
             if packet.haslayer(scapy.IP):

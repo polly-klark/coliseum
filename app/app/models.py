@@ -34,6 +34,14 @@ class PcapAnalyzer:
                 udp_ports.add(packet[scapy.UDP].dport)
         return sorted(udp_ports)
 
+    def get_sorted_macs(self):
+        macs = set()
+        for packet in self.packets:
+            if packet.haslayer(scapy.Ether):
+                macs.add(packet[scapy.Ether].src)
+                macs.add(packet[scapy.Ether].dst)
+        return sorted(macs)
+
 # Модель пользователя
 class User(BaseModel):
     username: str
