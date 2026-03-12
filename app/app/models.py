@@ -42,6 +42,14 @@ class PcapAnalyzer:
                 macs.add(packet[scapy.Ether].dst)
         return sorted(macs)
 
+    def get_ttls(self):
+        ttls = []
+        for packet in self.packets:  # Сверху вниз, как в файле
+            if packet.haslayer(scapy.IP):
+                ttl = packet[scapy.IP].ttl
+                ttls.append(str(ttl))  # С повторами!
+        return ttls
+
 # Модель пользователя
 class User(BaseModel):
     username: str
@@ -64,11 +72,16 @@ class MacPair(BaseModel):
     key: int
     mac: str
 
+class TtlPair(BaseModel):
+    key: int     # Номер (0, 3, 10)
+    ttl: str
+
 class ModificationRequest(BaseModel):
     ip_items: Optional[List[IpPair]] = None
     tcp_port_items: Optional[List[TcpPortPair]] = None
     udp_port_items: Optional[List[UdpPortPair]] = None
     mac_items: Optional[List[MacPair]] = None
+    ttl_items: Optional[List[TtlPair]] = None
     # Можно добавлять другие списки замены по мере необходимости
 
 def hash_password(password: str) -> str:

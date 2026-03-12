@@ -25,6 +25,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
   const [MACBox, setMACBox] = React.useState(false);
+  const [TTLBox, setTTLBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [stopFilename, setStopFilename] = React.useState("ничего");
@@ -47,6 +48,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
   const toggleDisabledMAC = () => {
     setMACBox(!MACBox);
+  };
+  const toggleDisabledTTL = () => {
+    setTTLBox(!TTLBox);
   };
   const [fileData, setFileData] = React.useState([]);
   // Состояние для отслеживания активных строк
@@ -86,14 +90,15 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       .map((key) => {
         // Ищем запись по любому из ключей
         const record = fileData.find((item) => 
-          item.ip_key === key || item.tcp_key === key || item.udp_key === key || item.mac_key === key
+          item.ip_key === key || item.tcp_key === key || item.udp_key === key || item.mac_key === key || item.ttl_key === key
         );
 
         console.log("🔍 Все ключи fileData:", fileData.map(item => ({
           ip_key: item.ip_key, 
           tcp_key: item.tcp_key, 
           udp_key: item.udp_key, 
-          mac_key: item.mac_key  // ← Проверь есть ли!
+          mac_key: item.mac_key,  // ← Проверь есть ли!
+          ttl_key: item.ttl_key
         })));
         
         if (!record) return null;
@@ -129,16 +134,22 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           index,
           mac: inputValues[key] || record.mac,
         };
+      } else if (type === 'ttl') {  // ✅ Новый блок
+        return {
+          key,
+          index,
+          ttl: inputValues[key] || record.ttl,
+        };
       }
       return null;
     })
     .filter(Boolean); // Убираем null
     
     console.log("Активные строки:", result);
-    console.log(`ip: ${JSON.stringify(result.filter(item => item.ip).map(item => ({
-      key: parseInt(item.key.split('_')[1]),
-      ip: item.ip
-    })), null, 2)}`);  
+    // console.log(`ip: ${JSON.stringify(result.filter(item => item.ip).map(item => ({
+    //   key: parseInt(item.key.split('_')[1]),
+    //   ip: item.ip
+    // })), null, 2)}`);  
     try {
       await axios.post(
         `http://127.0.0.1:8000/modification/${filename}`,
@@ -158,6 +169,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           mac_items: result.filter(item => item.mac).map(item => ({
             key: parseInt(item.key.split('_')[1]),
             mac: item.mac
+          })),
+          ttl_items: result.filter(item => item.ttl).map(item => ({
+            key: parseInt(item.key.split('_')[1]),
+            ttl: item.ttl
           })),
         },
         {
@@ -335,6 +350,43 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       ),
     },
   ];
+  const ttl_columns = [
+    {
+      title: "№ п/п",
+      dataIndex: "ttl_key",
+      key: "ttl_key",
+      render: (_, __, index) => index + 1, // Порядковый номер строки
+    },
+    {
+      title: "Изменить",
+      dataIndex: "checkbox",
+      key: "checkbox",
+      render: (_, record) => (
+        <Checkbox
+          checked={activeRows[record.ttl_key] || false}  // ← record.ip_key!
+          onChange={() => handleCheckboxChange(record.ttl_key)}  // ← record.ip_key!
+        />
+      ),
+    },
+    {
+      title: "Исходный TTL",
+      dataIndex: "ttl",
+      key: "ttl",
+    },
+    {
+      title: "Новый TTL",
+      dataIndex: "input",
+      key: "input",
+      render: (_, record) => (
+        <Input
+          disabled={!activeRows[record.ttl_key]}  // ← record.ip_key!
+          value={inputValues[record.ttl_key] || ""}
+          onChange={(e) => handleInputChange(record.ttl_key, e.target.value)}
+          placeholder="Введите данные"
+        />
+      ),
+    },
+  ];
 
   const styleRadio = {
     display: 'flex',
@@ -346,6 +398,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const tcpData = React.useMemo(() => fileData.filter(item => item.tcp_key), [fileData]);
   const udpData = React.useMemo(() => fileData.filter(item => item.udp_key), [fileData]);
   const macData = React.useMemo(() => fileData.filter(item => item.mac_key), [fileData]);
+  const ttlData = React.useMemo(() => fileData.filter(item => item.ttl_key), [fileData]);
 
   const itemsOfTabs = [
     {
@@ -415,6 +468,22 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           dataSource={macData}
           columns={mac_columns}
           rowKey="mac_key" // Уникальный ключ строки
+          />
+        )}
+      </>
+    },
+    {
+      key: '4',
+      label: 'TTL',
+      children:
+      <>
+        <Checkbox onChange={toggleDisabledTTL} checked={TTLBox}>Необходимо поменять</Checkbox>
+        <Divider />
+        {TTLBox && (
+          <Table
+          dataSource={ttlData}
+          columns={ttl_columns}
+          rowKey="ttl_key" // Уникальный ключ строки
           />
         )}
       </>
@@ -498,6 +567,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       let tcpIndex = 0;
       let udpIndex = 0;
       let macIndex = 0;
+      let ttlIndex = 0;
       const fileDataWithUniqueKeys = response.data.map((item) => {
         if (item.ip) {
           // IP — свой счётчик
@@ -521,7 +591,13 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           // UDP — свой счётчик
           return {
             ...item,
-            mac_key: `mac_${macIndex++}`,  // udp_0, udp_1, udp_2...
+            mac_key: `mac_${macIndex++}`,  // mac_0, mac_1, mac_2...
+          };
+        } else if (item.ttl) {
+          // UDP — свой счётчик
+          return {
+            ...item,
+            ttl_key: `ttl_${ttlIndex++}`,  // ttl_0, ttl_1, ttl_2...
           };
         }
       return item;
@@ -547,6 +623,9 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setValueRadio();
     setKeyOfTab("1");
     setPortBox(false);
+    setIPBox(false);
+    setMACBox(false);
+    setTTLBox(false);
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
