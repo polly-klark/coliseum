@@ -1,7 +1,8 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, useRef } from "react";
 import axios from "axios";
-import { Button, Divider, Modal, Space, Upload, message, Statistic, } from "antd";
+import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
 import AttackTable from "./Tables/AttackTable";
@@ -18,20 +19,66 @@ export function PlayProvider({ children }) {
   const [deadLineAttack, setDeadLineAttack] = React.useState(0);
   const onFinishAttack = () => {
     setDeadLineAttack(0);
+    setRemainingTimeAttack(0);
     setStopFilenameAttack("ничего");
   };
   const [stopFilenameBg, setStopFilenameBg] = React.useState("ничего");
   const [deadLineBg, setDeadLineBg] = React.useState(0);
   const onFinishBg = () => {
     setDeadLineBg(0);
+    setRemainingTimeBg(0);
     setStopFilenameBg("ничего");
   };
   const [stopFilenameMod, setStopFilenameMod] = React.useState("ничего");
   const [deadLineMod, setDeadLineMod] = React.useState(0);
   const onFinishMod = () => {
     setDeadLineMod(0);
+    setRemainingTimeMod(0);
     setStopFilenameMod("ничего");
+    setPercentAttack(0);  // ✅ Сброс прогресса
   };
+  const [remainingTimeAttack, setRemainingTimeAttack] = React.useState(0);
+  const [remainingTimeBg, setRemainingTimeBg] = React.useState(0);
+  const [remainingTimeMod, setRemainingTimeMod] = React.useState(0);
+  // const startAttack = (durationMs) => {
+  //   setDeadLineAttack(durationMs);           // 25000ms
+  //   setRemainingTimeAttack(durationMs);
+  // }
+  const conicColors = {
+    '0%': '#1677ff',
+    '50%': '#722ed1',
+    '100%': '#ff4d4f',
+  };
+  const [percentAttack, setPercentAttack] = useState(0);
+  const [percentBg, setPercentBg] = useState(50);
+  const [percentMod, setPercentMod] = useState(100);
+
+  const initialRemainingTimeRef = useRef(0);
+
+  // Таймер:
+useEffect(() => {
+  let interval;
+  
+  if (remainingTimeAttack > 0) {
+    interval = setInterval(() => {
+      setRemainingTimeAttack(prev => {
+        const newTime = Math.max(0, prev - 50);  // Уменьшаем на 50мс
+        
+        // ✅ progress = сколько уменьшилось / начальное время
+        const initialTime = initialRemainingTimeRef.current;
+        const elapsedMs = initialTime - newTime;  // Прошло времени
+        const progress = Math.floor((elapsedMs / initialTime) * 100);
+        
+        console.log(`Начало: ${initialTime/1000}s, Осталось: ${newTime/1000}s, Прогресс: ${progress}%`);
+        setPercentAttack(progress);
+        
+        return newTime;
+      });
+    }, 50);
+  }
+  
+  return () => interval && clearInterval(interval);
+}, [remainingTimeAttack]);
 
   return (
     <PlayContext.Provider value={{
@@ -44,6 +91,14 @@ export function PlayProvider({ children }) {
       stopFilenameMod, setStopFilenameMod,
       deadLineMod, setDeadLineMod,
       onFinishMod,
+      percentAttack, setPercentAttack,
+      percentBg, setPercentBg,
+      percentMod, setPercentMod,
+      conicColors,
+      remainingTimeAttack, setRemainingTimeAttack,
+      remainingTimeBg, setRemainingTimeBg,
+      remainingTimeMod, setRemainingTimeMod,
+      initialRemainingTimeRef,
     }}>
       {children}
     </PlayContext.Provider>
@@ -74,6 +129,14 @@ const Dashboard = ({ token }) => {
     stopFilenameMod, setStopFilenameMod,
     deadLineMod, setDeadLineMod,
     onFinishMod,
+    percentAttack, setPercentAttack,
+    percentBg, setPercentBg,
+    percentMod, setPercentMod,
+    conicColors,
+    remainingTimeAttack, setRemainingTimeAttack,
+    remainingTimeBg, setRemainingTimeBg,
+    remainingTimeMod, setRemainingTimeMod,
+    initialRemainingTimeRef,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -82,6 +145,7 @@ const Dashboard = ({ token }) => {
   const [open, setOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
+
   const handleStopAttack = async () => {
     try {
       await axios.post(`http://127.0.0.1:8000/stop`);
@@ -222,6 +286,9 @@ const Dashboard = ({ token }) => {
         {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
         <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
       </Space>
+      <Flex gap="small" wrap>
+      <Progress type="dashboard" percent={percentAttack} strokeColor={conicColors} />
+      </Flex>
       <Divider />
       <Space>
       <p>Сейчас проигрывается из фонового трафика {stopFilenameBg}</p>
@@ -231,6 +298,9 @@ const Dashboard = ({ token }) => {
         {stopFilenameBg === "ничего" && <Button disabled>Остановить</Button>}
         <Countdown value={deadLineBg} onFinish={onFinishBg} />
       </Space>
+      <Flex gap="small" wrap>
+      <Progress type="dashboard" percent={percentBg} strokeColor={conicColors} />
+      </Flex>
       <Divider />
       <Space>
       <p>Сейчас проигрывается из атак {stopFilenameMod}</p>
@@ -240,6 +310,9 @@ const Dashboard = ({ token }) => {
         {stopFilenameMod === "ничего" && <Button disabled>Остановить</Button>}
         <Countdown value={deadLineMod} onFinish={onFinishMod} />
       </Space>
+      <Flex gap="small" wrap>
+      <Progress type="dashboard" percent={percentMod} strokeColor={conicColors} />
+      </Flex>
       <div className="home_container">
         <Button
           color="danger"
@@ -249,14 +322,14 @@ const Dashboard = ({ token }) => {
           Ваши атаки
         </Button>
         <Button
-          color="primary"
+          color="purple"
           variant="outlined"
           onClick={() => handleButtonClick("attack", "attack", "Шаблоны атак")}
         >
           Шаблоны атак
         </Button>
         <Button
-          color="purple"
+          color="primary"
           variant="outlined"
           onClick={() =>
             handleButtonClick("background", "background", "Фоновый трафик")
