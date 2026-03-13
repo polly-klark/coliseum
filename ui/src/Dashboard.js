@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 import axios from "axios";
-import { Button, Divider, Modal, Space, Upload, message } from "antd";
+import { Button, Divider, Modal, Space, Upload, message, Statistic, } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import "./App.css"; // Импорт вашего CSS файла
 import ModTable from "./Tables/ModTable";
@@ -9,7 +9,44 @@ import BgTable from "./Tables/BgTable";
 
 const { Dragger } = Upload;
 
+const { Countdown } = Statistic;
+
+const AttackContext = createContext();
+
+export function AttackProvider({ children }) {
+  const [stopFilename, setStopFilename] = React.useState("ничего");
+  const [deadLine, setDeadLine] = React.useState(0);
+  const onFinish = () => {
+    setDeadLine(0);
+    setStopFilename("ничего");
+  };
+
+  return (
+    <AttackContext.Provider value={{
+      stopFilename, setStopFilename,
+      deadLine, setDeadLine,
+      onFinish,
+    }}>
+      {children}
+    </AttackContext.Provider>
+  );
+}
+
+export const useAttack = () => useContext(AttackContext);
+
+const OutDashboard = ({ token }) => {
+  return (
+    <AttackProvider>
+      {/* ✅ useAttack() ТОЛЬКО ЗДЕСЬ внутри Provider! */}
+      <div>
+        <Dashboard token={token} />  {/* Передай props */}
+      </div>
+    </AttackProvider>
+  );
+};
+
 const Dashboard = ({ token }) => {
+  const { stopFilename, setStopFilename, deadLine, setDeadLine, onFinish } = useAttack();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
   const [header, setHeader] = useState("Нажмите на кнопку!");
@@ -17,6 +54,16 @@ const Dashboard = ({ token }) => {
   const [open, setOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const handleStop = async () => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/stop`);
+      message.success(`Процесс успешно остановлен`);
+      setDeadLine(0);
+    } catch (error) {
+      console.error("Ошибка при остановке:", error);
+      message.error(`Ошибка при остановке`);
+    }
+  };
   const handleUpload = async (dir) => {
     const formData = new FormData();
     fileList.forEach((file) => {
@@ -118,6 +165,14 @@ const Dashboard = ({ token }) => {
   return (
     <>
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
+      <Space>
+      <p>Сейчас проигрывается {stopFilename}</p>
+        {stopFilename !== "ничего" && (
+          <Button onClick={() => handleStop()}>Остановить</Button>
+        )}
+        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLine} onFinish={onFinish} />
+      </Space>
       <div className="home_container">
         <Button
           color="danger"
@@ -238,4 +293,4 @@ const Dashboard = ({ token }) => {
   );
 };
 
-export default Dashboard;
+export default OutDashboard;

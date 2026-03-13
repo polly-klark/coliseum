@@ -77,6 +77,7 @@ class TtlPair(BaseModel):
     ttl: str
 
 class ModificationRequest(BaseModel):
+    filename: str
     ip_items: Optional[List[IpPair]] = None
     tcp_port_items: Optional[List[TcpPortPair]] = None
     udp_port_items: Optional[List[UdpPortPair]] = None
@@ -91,12 +92,18 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return plain_password == hashed_password
 
-def rename_file(original_filename):
-    # Разделяем имя файла на имя и расширение
-    name, ext = os.path.splitext(original_filename)
+def rename_file(original_filename: str, new_filename: str) -> str:
+    # Нормализуем расширения (добавляем, если отсутствует)
+    orig_name, orig_ext = os.path.splitext(original_filename)
+    new_name, new_ext = os.path.splitext(new_filename)
     
-    # Создаем новое имя файла, добавляя "_modified"
-    new_filename = f"{name}_modified{ext}"
+    # Сравниваем БЕЗ расширений + проверяем расширения
+    if orig_name == new_name and orig_ext == new_ext:
+        # Одинаковые → добавляем _modified
+        return f"{orig_name}_modified{orig_ext}"
+    else:
+        # Разные → возвращаем new_filename (с его расширением)
+        return new_filename
 
     return new_filename
 

@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import Login from "./Login";
-import Dashboard from "./Dashboard";
+import OutDashboard from "./Dashboard";
 
 const App = () => {
   const [token, setToken] = useState("");
 
   return (
     <div>
-      {!token ? <Login setToken={setToken} /> : <Dashboard token={token} />}
+      {!token ? <Login setToken={setToken} /> : <OutDashboard token={token} />}
     </div>
   );
 };

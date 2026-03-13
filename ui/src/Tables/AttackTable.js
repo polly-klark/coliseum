@@ -17,6 +17,7 @@ import {
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
+import { useAttack } from '../Dashboard';
 
 const { Column } = Table;
 const { Countdown } = Statistic;
@@ -30,7 +31,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
     });
   };
-  const [newFilename, setNewFilename] = React.useState(selectedFilename);
+  const { stopFilename, setStopFilename, deadLine, setDeadLine, onFinish, } = useAttack();
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
@@ -39,12 +40,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [nameBox, setNameBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
   const [selectedFilename, setSelectedFilename] = React.useState("");
-  const [stopFilename, setStopFilename] = React.useState("ничего");
-  const [deadLine, setDeadLine] = React.useState(0);
-  const onFinish = () => {
-    setDeadLine(0);
-    setStopFilename("ничего");
-  };
+  const [newFilename, setNewFilename] = React.useState(selectedFilename);
   const [valueRadio, setValueRadio] = React.useState();
   const onChangeRadio = e => {
     setValueRadio(e.target.value);
@@ -168,6 +164,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       await axios.post(
         `http://127.0.0.1:8000/modification/${filename}`,
         {
+          filename: newFilename,
           ip_items: result.filter(item => item.ip).map(item => ({
             key: parseInt(item.key.split('_')[1]),  // 0, 3, 10
             ip: item.ip  // Новое значение!
@@ -203,6 +200,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       console.error("Ошибка при модификации файла:", error);
       message.error(`Ошибка при модификации файла "${filename}"`);
     }
+    console.log(`"${newFilename}"`);
+    setNewFilename("");
     setOpen(false);
     setDisabledRadio(true);
     setValueRadio();
@@ -584,6 +583,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     setOpen(true);
     setSelectedFilename(filename);
+    setNewFilename(filename);
     try {
       const response = await axios.get(
         `http://127.0.0.1:8000/modification_list/${filename}`,

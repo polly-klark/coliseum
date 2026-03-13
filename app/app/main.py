@@ -350,6 +350,7 @@ async def ip_list(filename: str):
 # Модифицируем файл атаки
 @app.post("/modification/{filename}")
 async def file_modification(filename: str, request_data: ModificationRequest, user: User = Depends(get_current_user)):
+    user_filename = getattr(request_data, "filename")
     changed_ips = getattr(request_data, "ip_items", None)
     changed_tcp_ports = getattr(request_data, "tcp_port_items", None)
     changed_udp_ports = getattr(request_data, "udp_port_items", None)
@@ -358,7 +359,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
     # Можно добавить другие поля замены в будущем
     db = clientDB[f"{user.username}_m"]
     fs = AsyncIOMotorGridFSBucket(db)
-    logger.info(f"Получены данные: filename: {filename}, ip: {changed_ips}, tcp: {changed_tcp_ports}, udp: {changed_udp_ports}, mac: {changed_macs}, ttl: {changed_ttls}")
+    logger.info(f"Получены данные: filename: {filename}, new_filename: {user_filename}, ip: {changed_ips}, tcp: {changed_tcp_ports}, udp: {changed_udp_ports}, mac: {changed_macs}, ttl: {changed_ttls}")
     temp_file_path = None
     modified_temp_file_path = None
     # Открываем поток для чтения файла из GridFS по имени
@@ -470,7 +471,7 @@ async def file_modification(filename: str, request_data: ModificationRequest, us
         # Создаем новый временный файл для сохранения измененных пакетов
         modified_temp_file_path = tempfile.mktemp(suffix=".pcapng")
         scapy.wrpcap(modified_temp_file_path, packets)  # Сохраняем измененные пакеты в новый файл
-        new_filename = rename_file(filename)
+        new_filename = rename_file(filename, user_filename)
 
         # Загружаем измененный файл в GridFS
         with open(modified_temp_file_path, 'rb') as f:
