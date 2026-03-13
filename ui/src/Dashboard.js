@@ -56,29 +56,29 @@ export function PlayProvider({ children }) {
   const initialRemainingTimeRef = useRef(0);
 
   // Таймер:
-useEffect(() => {
-  let interval;
+// useEffect(() => {
+//   let interval;
   
-  if (remainingTimeAttack > 0) {
-    interval = setInterval(() => {
-      setRemainingTimeAttack(prev => {
-        const newTime = Math.max(0, prev - 50);  // Уменьшаем на 50мс
+//   if (remainingTimeAttack > 0) {
+//     interval = setInterval(() => {
+//       setRemainingTimeAttack(prev => {
+//         const newTime = Math.max(0, prev - 50);  // Уменьшаем на 50мс
         
-        // ✅ progress = сколько уменьшилось / начальное время
-        const initialTime = initialRemainingTimeRef.current;
-        const elapsedMs = initialTime - newTime;  // Прошло времени
-        const progress = Math.floor((elapsedMs / initialTime) * 100);
+//         // ✅ progress = сколько уменьшилось / начальное время
+//         const initialTime = initialRemainingTimeRef.current;
+//         const elapsedMs = initialTime - newTime;  // Прошло времени
+//         const progress = Math.floor((elapsedMs / initialTime) * 100);
         
-        console.log(`Начало: ${initialTime/1000}s, Осталось: ${newTime/1000}s, Прогресс: ${progress}%`);
-        setPercentAttack(progress);
+//         console.log(`Начало: ${initialTime/1000}s, Осталось: ${newTime/1000}s, Прогресс: ${progress}%`);
+//         setPercentAttack(progress);
         
-        return newTime;
-      });
-    }, 50);
-  }
+//         return newTime;
+//       });
+//     }, 50);
+//   }
   
-  return () => interval && clearInterval(interval);
-}, [remainingTimeAttack]);
+//   return () => interval && clearInterval(interval);
+// }, [remainingTimeAttack]);
 
   return (
     <PlayContext.Provider value={{
@@ -284,7 +284,20 @@ const Dashboard = ({ token }) => {
           <Button onClick={() => handleStopAttack()}>Остановить</Button>
         )}
         {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
+        <Countdown 
+          value={deadLineAttack} 
+          onFinish={onFinishAttack}
+          onChange={(value) => {
+            // ✅ Countdown сам вычисляет оставшееся время!
+            const remainingMs = value;  // Миллисекунды от Countdown
+            setRemainingTimeAttack(remainingMs);
+            
+            // Прогресс от реального оставшегося времени
+            const totalDuration = initialRemainingTimeRef.current;  // 25000ms
+            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
+            setPercentAttack(progress);
+          }}
+        />
       </Space>
       <Flex gap="small" wrap>
       <Progress type="dashboard" percent={percentAttack} strokeColor={conicColors} />
