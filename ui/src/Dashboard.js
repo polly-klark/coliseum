@@ -151,6 +151,7 @@ const Dashboard = ({ token }) => {
       await axios.post(`http://127.0.0.1:8000/stop`);
       message.success(`Процесс успешно остановлен`);
       setDeadLineAttack(0);
+      setPercentAttack(0);
     } catch (error) {
       console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
