@@ -11,42 +11,42 @@ const { Dragger } = Upload;
 
 const { Countdown } = Statistic;
 
-const AttackContext = createContext();
+const PlayContext = createContext();
 
-export function AttackProvider({ children }) {
-  const [stopFilename, setStopFilename] = React.useState("ничего");
-  const [deadLine, setDeadLine] = React.useState(0);
-  const onFinish = () => {
-    setDeadLine(0);
-    setStopFilename("ничего");
+export function PlayProvider({ children }) {
+  const [stopFilenameAttack, setStopFilenameAttack] = React.useState("ничего");
+  const [deadLineAttack, setDeadLineAttack] = React.useState(0);
+  const onFinishAttack = () => {
+    setDeadLineAttack(0);
+    setStopFilenameAttack("ничего");
   };
 
   return (
-    <AttackContext.Provider value={{
-      stopFilename, setStopFilename,
-      deadLine, setDeadLine,
-      onFinish,
+    <PlayContext.Provider value={{
+      stopFilenameAttack, setStopFilenameAttack,
+      deadLineAttack, setDeadLineAttack,
+      onFinishAttack,
     }}>
       {children}
-    </AttackContext.Provider>
+    </PlayContext.Provider>
   );
 }
 
-export const useAttack = () => useContext(AttackContext);
+export const usePlay = () => useContext(PlayContext);
 
 const OutDashboard = ({ token }) => {
   return (
-    <AttackProvider>
+    <PlayProvider>
       {/* ✅ useAttack() ТОЛЬКО ЗДЕСЬ внутри Provider! */}
       <div>
         <Dashboard token={token} />  {/* Передай props */}
       </div>
-    </AttackProvider>
+    </PlayProvider>
   );
 };
 
 const Dashboard = ({ token }) => {
-  const { stopFilename, setStopFilename, deadLine, setDeadLine, onFinish } = useAttack();
+  const { stopFilenameAttack, setStopFilenameAttack, deadLineAttack, setDeadLineAttack, onFinishAttack } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
   const [header, setHeader] = useState("Нажмите на кнопку!");
@@ -167,30 +167,30 @@ const Dashboard = ({ token }) => {
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
       <Divider />
       <Space>
-      <p>Сейчас проигрывается из шаблонов {stopFilename}</p>
-        {stopFilename !== "ничего" && (
+      <p>Сейчас проигрывается из шаблонов {stopFilenameAttack}</p>
+        {stopFilenameAttack !== "ничего" && (
           <Button onClick={() => handleStop()}>Остановить</Button>
         )}
-        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLine} onFinish={onFinish} />
+        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
       </Space>
       <Divider />
       <Space>
-      <p>Сейчас проигрывается из фонового трафика {stopFilename}</p>
-        {stopFilename !== "ничего" && (
+      <p>Сейчас проигрывается из фонового трафика {stopFilenameAttack}</p>
+        {stopFilenameAttack !== "ничего" && (
           <Button onClick={() => handleStop()}>Остановить</Button>
         )}
-        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLine} onFinish={onFinish} />
+        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
       </Space>
       <Divider />
       <Space>
-      <p>Сейчас проигрывается из атак {stopFilename}</p>
-        {stopFilename !== "ничего" && (
+      <p>Сейчас проигрывается из атак {stopFilenameAttack}</p>
+        {stopFilenameAttack !== "ничего" && (
           <Button onClick={() => handleStop()}>Остановить</Button>
         )}
-        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLine} onFinish={onFinish} />
+        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
       </Space>
       <div className="home_container">
         <Button

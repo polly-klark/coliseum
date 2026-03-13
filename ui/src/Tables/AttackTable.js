@@ -17,7 +17,7 @@ import {
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
-import { useAttack } from '../Dashboard';
+import { usePlay } from '../Dashboard';
 
 const { Column } = Table;
 const { Countdown } = Statistic;
@@ -31,7 +31,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
     });
   };
-  const { stopFilename, setStopFilename, deadLine, setDeadLine, onFinish, } = useAttack();
+  const { stopFilenameAttack, setStopFilenameAttack, deadLineAttack, setDeadLineAttack, onFinishAttack, } = usePlay();
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
