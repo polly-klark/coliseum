@@ -87,13 +87,6 @@ const ModTable = ({ data, user, token, fetchData }) => {
 
   return (
     <>
-      <Space>
-        <p>Сейчас проигрывается {stopFilenameMod}</p>
-        {stopFilenameMod !== "ничего" && (<Button onClick={() => handleStopMod()}>Остановить</Button>)}
-        {stopFilenameMod === "ничего" && (<Button disabled>Остановить</Button>)}
-        <Countdown value={deadLineMod} onFinish={onFinishMod} />
-      </Space>
-      <Divider />
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"
