@@ -165,8 +165,27 @@ const Dashboard = ({ token }) => {
   return (
     <>
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
+      <Divider />
       <Space>
-      <p>Сейчас проигрывается {stopFilename}</p>
+      <p>Сейчас проигрывается из шаблонов {stopFilename}</p>
+        {stopFilename !== "ничего" && (
+          <Button onClick={() => handleStop()}>Остановить</Button>
+        )}
+        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLine} onFinish={onFinish} />
+      </Space>
+      <Divider />
+      <Space>
+      <p>Сейчас проигрывается из фонового трафика {stopFilename}</p>
+        {stopFilename !== "ничего" && (
+          <Button onClick={() => handleStop()}>Остановить</Button>
+        )}
+        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLine} onFinish={onFinish} />
+      </Space>
+      <Divider />
+      <Space>
+      <p>Сейчас проигрывается из атак {stopFilename}</p>
         {stopFilename !== "ничего" && (
           <Button onClick={() => handleStop()}>Остановить</Button>
         )}
@@ -199,7 +218,6 @@ const Dashboard = ({ token }) => {
         </Button>
       </div>
       <p style={{ textAlign: "center" }}>{header}</p>
-      <Divider />
       {/* Условный рендеринг таблиц */}
       {activeTable === "mod" && data.length > 0 ? (
         <ModTable data={data} user={user} token={token} fetchData={fetchData} />

@@ -673,15 +673,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   return (
     <>
       {contextHolder}
-      <Space>
-      <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && (
-          <Button onClick={() => handleStop()}>Остановить</Button>
-        )}
-        {stopFilename === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLine} onFinish={onFinish} />
-      </Space>
-      <Divider />
       <Table dataSource={data} rowKey="filename">
         <Column
           title="№ п/п"
