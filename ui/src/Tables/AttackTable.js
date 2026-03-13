@@ -521,7 +521,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
-    setStopFilename(filename);
+    setStopFilenameAttack(filename);
     try {
       const response = await axios.post(`http://127.0.0.1:8000/play_attack/${filename}`, null, {
         headers: {
@@ -530,7 +530,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       });
       const parsedData = JSON.parse(response.data);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
-      setDeadLine(duration);
+      setDeadLineAttack(duration);
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
@@ -659,16 +659,16 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setSelectedFilename(""); // Очищаем имя файла при закрытии модального окна
     form.resetFields(); // Сбрасываем значения при открытии модального окна
   };
-  const handleStop = async () => {
-    try {
-      await axios.post(`http://127.0.0.1:8000/stop`);
-      message.success(`Процесс успешно остановлен`);
-      setDeadLine(0);
-    } catch (error) {
-      console.error("Ошибка при остановке:", error);
-      message.error(`Ошибка при остановке`);
-    }
-  };
+  // const handleStop = async () => {
+  //   try {
+  //     await axios.post(`http://127.0.0.1:8000/stop`);
+  //     message.success(`Процесс успешно остановлен`);
+  //     setDeadLineAttack(0);
+  //   } catch (error) {
+  //     console.error("Ошибка при остановке:", error);
+  //     message.error(`Ошибка при остановке`);
+  //   }
+  // };
 
   return (
     <>

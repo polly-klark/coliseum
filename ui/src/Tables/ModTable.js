@@ -3,17 +3,17 @@ import dayjs from "dayjs";
 import { Table, Space, message, Button, Statistic, Divider } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
+import { usePlay } from '../Dashboard';
 
 const { Column } = Table;
 const { Countdown } = Statistic;
 
 const ModTable = ({ data, user, token, fetchData }) => {
-  const [stopFilename, setStopFilename] = React.useState("ничего");
-  const [deadLine, setDeadLine] = React.useState(0);
-  const onFinish = () => {
-    setDeadLine(0);
-    setStopFilename("ничего");
-  };
+  const { 
+    stopFilenameMod, setStopFilenameMod,
+    deadLineMod, setDeadLineMod,
+    onFinishMod,
+  } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -58,7 +58,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
-    setStopFilename(filename)
+    setStopFilenameMod(filename)
     try {
       const response = await axios.post(`http://127.0.0.1:8000/play/${filename}`, null, {
         headers: { Authorization: `Bearer ${token}` }
@@ -66,7 +66,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
 
       const parsedData = JSON.parse(response.data);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
-      setDeadLine(duration);
+      setDeadLineMod(duration);
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
@@ -74,11 +74,11 @@ const ModTable = ({ data, user, token, fetchData }) => {
     }
   };
 
-  const handleStop = async () => {
+  const handleStopMod = async () => {
     try {
       await axios.post(`http://127.0.0.1:8000/stop`);
       message.success(`Процесс успешно остановлен`);
-      setDeadLine(0);
+      setDeadLineMod(0);
     } catch (error) {
       console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
@@ -88,10 +88,10 @@ const ModTable = ({ data, user, token, fetchData }) => {
   return (
     <>
       <Space>
-        <p>Сейчас проигрывается {stopFilename}</p>
-        {stopFilename !== "ничего" && (<Button onClick={() => handleStop()}>Остановить</Button>)}
-        {stopFilename === "ничего" && (<Button disabled>Остановить</Button>)}
-        <Countdown value={deadLine} onFinish={onFinish} />
+        <p>Сейчас проигрывается {stopFilenameMod}</p>
+        {stopFilenameMod !== "ничего" && (<Button onClick={() => handleStopMod()}>Остановить</Button>)}
+        {stopFilenameMod === "ничего" && (<Button disabled>Остановить</Button>)}
+        <Countdown value={deadLineMod} onFinish={onFinishMod} />
       </Space>
       <Divider />
       <Table dataSource={data} rowKey="filename">

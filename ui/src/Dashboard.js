@@ -20,12 +20,30 @@ export function PlayProvider({ children }) {
     setDeadLineAttack(0);
     setStopFilenameAttack("ничего");
   };
+  const [stopFilenameBg, setStopFilenameBg] = React.useState("ничего");
+  const [deadLineBg, setDeadLineBg] = React.useState(0);
+  const onFinishBg = () => {
+    setDeadLineBg(0);
+    setStopFilenameBg("ничего");
+  };
+  const [stopFilenameMod, setStopFilenameMod] = React.useState("ничего");
+  const [deadLineMod, setDeadLineMod] = React.useState(0);
+  const onFinishMod = () => {
+    setDeadLineMod(0);
+    setStopFilenameMod("ничего");
+  };
 
   return (
     <PlayContext.Provider value={{
       stopFilenameAttack, setStopFilenameAttack,
       deadLineAttack, setDeadLineAttack,
       onFinishAttack,
+      stopFilenameBg, setStopFilenameBg,
+      deadLineBg, setDeadLineBg,
+      onFinishBg,
+      stopFilenameMod, setStopFilenameMod,
+      deadLineMod, setDeadLineMod,
+      onFinishMod,
     }}>
       {children}
     </PlayContext.Provider>
@@ -46,7 +64,17 @@ const OutDashboard = ({ token }) => {
 };
 
 const Dashboard = ({ token }) => {
-  const { stopFilenameAttack, setStopFilenameAttack, deadLineAttack, setDeadLineAttack, onFinishAttack } = usePlay();
+  const { 
+    stopFilenameAttack, setStopFilenameAttack, 
+    deadLineAttack, setDeadLineAttack, 
+    onFinishAttack,
+    stopFilenameBg, setStopFilenameBg, 
+    deadLineBg, setDeadLineBg, 
+    onFinishBg,
+    stopFilenameMod, setStopFilenameMod,
+    deadLineMod, setDeadLineMod,
+    onFinishMod,
+  } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
   const [header, setHeader] = useState("Нажмите на кнопку!");
@@ -54,11 +82,31 @@ const Dashboard = ({ token }) => {
   const [open, setOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const handleStop = async () => {
+  const handleStopAttack = async () => {
     try {
       await axios.post(`http://127.0.0.1:8000/stop`);
       message.success(`Процесс успешно остановлен`);
-      setDeadLine(0);
+      setDeadLineAttack(0);
+    } catch (error) {
+      console.error("Ошибка при остановке:", error);
+      message.error(`Ошибка при остановке`);
+    }
+  };
+  const handleStopBg = async () => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/stop`);
+      message.success(`Процесс успешно остановлен`);
+      setDeadLineBg(0);
+    } catch (error) {
+      console.error("Ошибка при остановке:", error);
+      message.error(`Ошибка при остановке`);
+    }
+  };
+  const handleStopMod = async () => {
+    try {
+      await axios.post(`http://127.0.0.1:8000/stop`);
+      message.success(`Процесс успешно остановлен`);
+      setDeadLineMod(0);
     } catch (error) {
       console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
@@ -169,28 +217,28 @@ const Dashboard = ({ token }) => {
       <Space>
       <p>Сейчас проигрывается из шаблонов {stopFilenameAttack}</p>
         {stopFilenameAttack !== "ничего" && (
-          <Button onClick={() => handleStop()}>Остановить</Button>
+          <Button onClick={() => handleStopAttack()}>Остановить</Button>
         )}
         {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
         <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
       </Space>
       <Divider />
       <Space>
-      <p>Сейчас проигрывается из фонового трафика {stopFilenameAttack}</p>
-        {stopFilenameAttack !== "ничего" && (
-          <Button onClick={() => handleStop()}>Остановить</Button>
+      <p>Сейчас проигрывается из фонового трафика {stopFilenameBg}</p>
+        {stopFilenameBg !== "ничего" && (
+          <Button onClick={() => handleStopBg()}>Остановить</Button>
         )}
-        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
+        {stopFilenameBg === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLineBg} onFinish={onFinishBg} />
       </Space>
       <Divider />
       <Space>
-      <p>Сейчас проигрывается из атак {stopFilenameAttack}</p>
-        {stopFilenameAttack !== "ничего" && (
-          <Button onClick={() => handleStop()}>Остановить</Button>
+      <p>Сейчас проигрывается из атак {stopFilenameMod}</p>
+        {stopFilenameMod !== "ничего" && (
+          <Button onClick={() => handleStopMod()}>Остановить</Button>
         )}
-        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLineAttack} onFinish={onFinishAttack} />
+        {stopFilenameMod === "ничего" && <Button disabled>Остановить</Button>}
+        <Countdown value={deadLineMod} onFinish={onFinishMod} />
       </Space>
       <div className="home_container">
         <Button
