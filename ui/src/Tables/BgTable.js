@@ -13,6 +13,8 @@ const BgTable = ({ data, user, token, fetchData }) => {
     stopFilenameBg, setStopFilenameBg, 
     deadLineBg, setDeadLineBg, 
     onFinishBg,
+    remainingTimeBg, setRemainingTimeBg,
+    initialRemainingTimeRefBg,
   } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -68,6 +70,8 @@ const BgTable = ({ data, user, token, fetchData }) => {
       const parsedData = JSON.parse(response.data);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineBg(duration);
+      setRemainingTimeBg(parsedData.duration * 1000);
+      initialRemainingTimeRefBg.current = parsedData.duration * 1000
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);

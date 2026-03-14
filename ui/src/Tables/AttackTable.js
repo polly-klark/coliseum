@@ -31,7 +31,13 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
     });
   };
-  const { stopFilenameAttack, setStopFilenameAttack, deadLineAttack, setDeadLineAttack, onFinishAttack, remainingTimeAttack, setRemainingTimeAttack, initialRemainingTimeRef} = usePlay();
+  const { 
+    stopFilenameAttack, setStopFilenameAttack, 
+    deadLineAttack, setDeadLineAttack, 
+    onFinishAttack, 
+    remainingTimeAttack, setRemainingTimeAttack,
+    initialRemainingTimeRefAttack 
+  } = usePlay();
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
@@ -532,7 +538,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineAttack(duration);
       setRemainingTimeAttack(parsedData.duration * 1000);
-      initialRemainingTimeRef.current = parsedData.duration * 1000
+      initialRemainingTimeRefAttack.current = parsedData.duration * 1000
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);

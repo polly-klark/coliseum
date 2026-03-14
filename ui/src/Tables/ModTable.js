@@ -13,6 +13,8 @@ const ModTable = ({ data, user, token, fetchData }) => {
     stopFilenameMod, setStopFilenameMod,
     deadLineMod, setDeadLineMod,
     onFinishMod,
+    remainingTimeMod, setRemainingTimeMod,
+    initialRemainingTimeRefMod,
   } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -63,10 +65,11 @@ const ModTable = ({ data, user, token, fetchData }) => {
       const response = await axios.post(`http://127.0.0.1:8000/play/${filename}`, null, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       const parsedData = JSON.parse(response.data);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineMod(duration);
+      setRemainingTimeMod(parsedData.duration * 1000);
+      initialRemainingTimeRefMod.current = parsedData.duration * 1000
       message.success(`Файл "${filename}" успешно передан на запуск`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);

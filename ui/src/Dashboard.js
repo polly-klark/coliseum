@@ -15,31 +15,33 @@ const { Countdown } = Statistic;
 const PlayContext = createContext();
 
 export function PlayProvider({ children }) {
-  const [stopFilenameAttack, setStopFilenameAttack] = React.useState("ничего");
-  const [deadLineAttack, setDeadLineAttack] = React.useState(0);
+  const [stopFilenameAttack, setStopFilenameAttack] = useState("ничего");
+  const [deadLineAttack, setDeadLineAttack] = useState(0);
   const onFinishAttack = () => {
     setDeadLineAttack(0);
     setRemainingTimeAttack(0);
     setStopFilenameAttack("ничего");
+    setPercentAttack(0);  // ✅ Сброс прогресса
   };
-  const [stopFilenameBg, setStopFilenameBg] = React.useState("ничего");
-  const [deadLineBg, setDeadLineBg] = React.useState(0);
+  const [stopFilenameBg, setStopFilenameBg] = useState("ничего");
+  const [deadLineBg, setDeadLineBg] = useState(0);
   const onFinishBg = () => {
     setDeadLineBg(0);
     setRemainingTimeBg(0);
     setStopFilenameBg("ничего");
+    setPercentBg(0);  // ✅ Сброс прогресса
   };
-  const [stopFilenameMod, setStopFilenameMod] = React.useState("ничего");
-  const [deadLineMod, setDeadLineMod] = React.useState(0);
+  const [stopFilenameMod, setStopFilenameMod] = useState("ничего");
+  const [deadLineMod, setDeadLineMod] = useState(0);
   const onFinishMod = () => {
     setDeadLineMod(0);
     setRemainingTimeMod(0);
     setStopFilenameMod("ничего");
-    setPercentAttack(0);  // ✅ Сброс прогресса
+    setPercentMod(0);  // ✅ Сброс прогресса
   };
-  const [remainingTimeAttack, setRemainingTimeAttack] = React.useState(0);
-  const [remainingTimeBg, setRemainingTimeBg] = React.useState(0);
-  const [remainingTimeMod, setRemainingTimeMod] = React.useState(0);
+  const [remainingTimeAttack, setRemainingTimeAttack] = useState(0);
+  const [remainingTimeBg, setRemainingTimeBg] = useState(0);
+  const [remainingTimeMod, setRemainingTimeMod] = useState(0);
   // const startAttack = (durationMs) => {
   //   setDeadLineAttack(durationMs);           // 25000ms
   //   setRemainingTimeAttack(durationMs);
@@ -50,10 +52,12 @@ export function PlayProvider({ children }) {
     '100%': '#ff4d4f',
   };
   const [percentAttack, setPercentAttack] = useState(0);
-  const [percentBg, setPercentBg] = useState(50);
-  const [percentMod, setPercentMod] = useState(100);
+  const [percentBg, setPercentBg] = useState(0);
+  const [percentMod, setPercentMod] = useState(0);
 
-  const initialRemainingTimeRef = useRef(0);
+  const initialRemainingTimeRefAttack = useRef(0);
+  const initialRemainingTimeRefBg = useRef(0);
+  const initialRemainingTimeRefMod = useRef(0);
 
   // Таймер:
 // useEffect(() => {
@@ -98,7 +102,9 @@ export function PlayProvider({ children }) {
       remainingTimeAttack, setRemainingTimeAttack,
       remainingTimeBg, setRemainingTimeBg,
       remainingTimeMod, setRemainingTimeMod,
-      initialRemainingTimeRef,
+      initialRemainingTimeRefAttack,
+      initialRemainingTimeRefBg,
+      initialRemainingTimeRefMod,
     }}>
       {children}
     </PlayContext.Provider>
@@ -136,7 +142,9 @@ const Dashboard = ({ token }) => {
     remainingTimeAttack, setRemainingTimeAttack,
     remainingTimeBg, setRemainingTimeBg,
     remainingTimeMod, setRemainingTimeMod,
-    initialRemainingTimeRef,
+    initialRemainingTimeRefAttack,
+    initialRemainingTimeRefBg,
+    initialRemainingTimeRefMod,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -294,7 +302,7 @@ const Dashboard = ({ token }) => {
             setRemainingTimeAttack(remainingMs);
             
             // Прогресс от реального оставшегося времени
-            const totalDuration = initialRemainingTimeRef.current;  // 25000ms
+            const totalDuration = initialRemainingTimeRefAttack.current;  // 25000ms
             const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
             setPercentAttack(progress);
           }}
@@ -310,7 +318,20 @@ const Dashboard = ({ token }) => {
           <Button onClick={() => handleStopBg()}>Остановить</Button>
         )}
         {stopFilenameBg === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLineBg} onFinish={onFinishBg} />
+        <Countdown 
+          value={deadLineBg} 
+          onFinish={onFinishBg}
+          onChange={(value) => {
+            // ✅ Countdown сам вычисляет оставшееся время!
+            const remainingMs = value;  // Миллисекунды от Countdown
+            setRemainingTimeBg(remainingMs);
+            
+            // Прогресс от реального оставшегося времени
+            const totalDuration = initialRemainingTimeRefBg.current;  // 25000ms
+            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
+            setPercentBg(progress);
+          }}
+        />
       </Space>
       <Flex gap="small" wrap>
       <Progress type="dashboard" percent={percentBg} strokeColor={conicColors} />
@@ -322,7 +343,20 @@ const Dashboard = ({ token }) => {
           <Button onClick={() => handleStopMod()}>Остановить</Button>
         )}
         {stopFilenameMod === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown value={deadLineMod} onFinish={onFinishMod} />
+        <Countdown 
+          value={deadLineMod} 
+          onFinish={onFinishMod}
+          onChange={(value) => {
+            // ✅ Countdown сам вычисляет оставшееся время!
+            const remainingMs = value;  // Миллисекунды от Countdown
+            setRemainingTimeMod(remainingMs);
+            
+            // Прогресс от реального оставшегося времени
+            const totalDuration = initialRemainingTimeRefMod.current;  // 25000ms
+            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
+            setPercentMod(progress);
+          }}
+        />
       </Space>
       <Flex gap="small" wrap>
       <Progress type="dashboard" percent={percentMod} strokeColor={conicColors} />
