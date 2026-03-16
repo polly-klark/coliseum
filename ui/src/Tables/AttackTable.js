@@ -36,7 +36,10 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     deadLineAttack, setDeadLineAttack, 
     onFinishAttack, 
     remainingTimeAttack, setRemainingTimeAttack,
-    initialRemainingTimeRefAttack 
+    initialRemainingTimeRefAttack,
+    activeAttacks,
+    startAttack,
+    stopAttack, 
   } = usePlay();
   const [open, setOpen] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
@@ -535,6 +538,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         },
       });
       const parsedData = JSON.parse(response.data);
+      startAttack(filename, parseFloat(parsedData.duration));
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineAttack(duration);
       setRemainingTimeAttack(parsedData.duration * 1000);

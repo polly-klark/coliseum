@@ -84,6 +84,47 @@ export function PlayProvider({ children }) {
 //   return () => interval && clearInterval(interval);
 // }, [remainingTimeAttack]);
 
+const [activeAttacks, setActiveAttacks] = useState([]);  // ✅ Массив атак!
+  
+// ✅ Добавляем новую атаку
+const startAttack = (filename, durationSeconds) => {
+  const attackId = Date.now() + Math.random();  // Уникальный ID
+  const deadLine = Date.now() + durationSeconds * 1000;
+  const initialDuration = durationSeconds * 1000;
+  
+  const newAttack = {
+    id: attackId,
+    filename,
+    deadLine,
+    initialDuration,
+    percent: 0
+  };
+  
+  setActiveAttacks(prev => [...prev, newAttack]);
+  return attackId;
+};
+
+// ✅ Синхронизируем прогресс ВСЕХ атак
+useEffect(() => {
+  const interval = setInterval(() => {
+    setActiveAttacks(prevAttacks => 
+      prevAttacks.map(attack => {
+        const now = Date.now();
+        const elapsed = now - (attack.deadLine - attack.initialDuration);
+        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        
+        return { ...attack, percent: progress };
+      }).filter(attack => attack.percent < 100)  // Удаляем завершённые
+    );
+  }, 100);
+  
+  return () => clearInterval(interval);
+}, []);
+
+const stopAttack = (attackId) => {
+  setActiveAttacks(prev => prev.filter(attack => attack.id !== attackId));
+};
+
   return (
     <PlayContext.Provider value={{
       stopFilenameAttack, setStopFilenameAttack,
@@ -105,6 +146,9 @@ export function PlayProvider({ children }) {
       initialRemainingTimeRefAttack,
       initialRemainingTimeRefBg,
       initialRemainingTimeRefMod,
+      activeAttacks,
+      startAttack,
+      stopAttack,
     }}>
       {children}
     </PlayContext.Provider>
@@ -145,6 +189,9 @@ const Dashboard = ({ token }) => {
     initialRemainingTimeRefAttack,
     initialRemainingTimeRefBg,
     initialRemainingTimeRefMod,
+    activeAttacks,
+    startAttack,
+    stopAttack,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -310,6 +357,23 @@ const Dashboard = ({ token }) => {
       </Space>
       <Flex gap="small" wrap>
       <Progress type="dashboard" percent={percentAttack} strokeColor={conicColors} />
+      <div className="active-attacks">
+      {activeAttacks.map(attack => (
+        <div key={attack.id} className="attack-progress">
+          <Space>
+            <p>🎮 {attack.filename}</p>
+            <Button onClick={() => stopAttack(attack.id)}>🛑 Остановить</Button>
+            <Countdown value={attack.deadLine} onFinish={() => stopAttack(attack.id)} />
+          </Space>
+          
+          <Progress 
+            type="dashboard" 
+            percent={attack.percent} 
+            strokeColor={conicColors}
+          />
+        </div>
+      ))}
+    </div>
       </Flex>
       <Divider />
       <Space>
