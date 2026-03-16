@@ -109,9 +109,15 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prevAttacks => 
       prevAttacks.map(attack => {
+        if (attack.status === 'completed') return attack;  // ✅ Не трогаем завершённые!
         const now = Date.now();
         const elapsed = now - (attack.deadLine - attack.initialDuration);
         const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        
+        // ✅ Помечаем завершённые, НО НЕ удаляем!
+        if (progress >= 100 && attack.status !== 'completed') {
+          return { ...attack, percent: 100, status: 'completed' };
+        }
         
         return { ...attack, percent: progress };
       }).filter(attack => attack.percent < 100)  // Удаляем завершённые
@@ -123,6 +129,10 @@ useEffect(() => {
 
 const stopAttack = (attackId) => {
   setActiveAttacks(prev => prev.filter(attack => attack.id !== attackId));
+};
+
+const clearCompleted = () => {
+  setActiveAttacks(prev => prev.filter(attack => attack.status !== 'completed'));
 };
 
   return (
@@ -149,6 +159,7 @@ const stopAttack = (attackId) => {
       activeAttacks,
       startAttack,
       stopAttack,
+      clearCompleted,
     }}>
       {children}
     </PlayContext.Provider>
@@ -192,6 +203,7 @@ const Dashboard = ({ token }) => {
     activeAttacks,
     startAttack,
     stopAttack,
+    clearCompleted,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
