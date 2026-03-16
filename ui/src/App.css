@@ -168,3 +168,12 @@
   font-size: 12px;
   font-family: monospace;
 }
+
+/*.dashboard-background {
+  background-image: url('../public/neon.avif');  /* ← Путь к картинке 
+  background-size: cover;        /* Растягивает на весь размер 
+  background-position: center;   /* Центрирует 
+  background-repeat: no-repeat;  /* Не повторяет 
+  min-height: 100vh;             /* Высота экрана 
+  padding: 20px;
+}*/

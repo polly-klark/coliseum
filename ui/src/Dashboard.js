@@ -385,7 +385,6 @@ const Dashboard = ({ token }) => {
         />
       </Space>
       <Flex gap="small" wrap>
-      <Progress type="dashboard" percent={percentAttack} strokeColor={conicColors} />
       {/* <div className="active-attacks">
       {activeAttacks.map(attack => (
         <div key={attack.id} className="attack-progress">
@@ -420,6 +419,8 @@ const Dashboard = ({ token }) => {
                   >
                     🛑 Остановить
                   </Button>
+                ) : attack.status === 'stopped' ? (
+                    <Tag color="default">⏸️ Приостановлена нет</Tag>
                 ) : (
                   <Tag color="success">✅ Завершено</Tag>
                 )}
@@ -431,7 +432,6 @@ const Dashboard = ({ token }) => {
                   percent={attack.percent}
                   strokeColor={conicColors}
                 />
-                <div>{attack.percent}%</div>
               </div>
               
               {attack.status === 'running' && (
@@ -483,7 +483,6 @@ const Dashboard = ({ token }) => {
         />
       </Space>
       <Flex gap="small" wrap>
-      <Progress type="dashboard" percent={percentBg} strokeColor={conicColors} />
       </Flex>
       <Divider />
       <Space>
@@ -508,7 +507,6 @@ const Dashboard = ({ token }) => {
         />
       </Space>
       <Flex gap="small" wrap>
-      <Progress type="dashboard" percent={percentMod} strokeColor={conicColors} />
       </Flex>
       <div className="home_container">
         <Button
