@@ -751,7 +751,7 @@ const Dashboard = ({ token }) => {
                       🛑 Остановить
                     </Button>
                   ) : attack.status === 'stopped' ? (
-                      <Tag color="error">⏸️ Приостановлена нет</Tag>
+                      <Tag color="error">Остановлена</Tag>
                   ) : (
                     <Tag color="success">✅ Завершено</Tag>
                   )}
@@ -837,86 +837,128 @@ const Dashboard = ({ token }) => {
         </div>
       )}
       <Divider />
-      <Space>
-      <p>Сейчас проигрывается из атак {stopFilenameMod}</p>
-        {stopFilenameMod !== "ничего" && (
-          <Button onClick={() => handleStopMod()}>Остановить</Button>
-        )}
-        {stopFilenameMod === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown 
-          value={deadLineMod} 
-          onFinish={onFinishMod}
-          onChange={(value) => {
-            // ✅ Countdown сам вычисляет оставшееся время!
-            const remainingMs = value;  // Миллисекунды от Countdown
-            setRemainingTimeMod(remainingMs);
+      <p style={{ textAlign: "center" }}>Запущенные атаки</p>
+      {activeMods.length > 0 ? (
+        <Flex gap="small" wrap>
+        {/* <div className="active-attacks">
+        {activeAttacks.map(attack => (
+          <div key={attack.id} className="attack-progress">
+            <Space>
+              <p>🎮 {attack.filename}</p>
+              <Button onClick={() => stopAttack(attack.id)}>🛑 Остановить</Button>
+              <Countdown value={attack.deadLine} onFinish={() => stopAttack(attack.id)} />
+            </Space>
             
-            // Прогресс от реального оставшегося времени
-            const totalDuration = initialRemainingTimeRefMod.current;  // 25000ms
-            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
-            setPercentMod(progress);
-          }}
-        />
-      </Space>
-      <Flex gap="small" wrap>
-      {activeMods.length > 0 && (
-      <div style={{ marginTop: '20px' }}>
-        <h3>🎮 Активные атаки ({activeMods.length})</h3>
-        
-        <div className="attacks-container">
-          {activeMods.map(attack => (
-            <div key={attack.id} className={`attack-card ${attack.status}`}>
-              <div className="attack-header">
-                <span>📁 {attack.filename}</span>
-                {attack.status === 'running' ? (
-                  <Button 
-                    danger 
-                    size="small" 
-                    onClick={() => stopMod(attack.id)}
-                  >
-                    🛑 Остановить
-                  </Button>
-                ) : attack.status === 'stopped' ? (
-                    <Tag color="default">⏸️ Приостановлена нет</Tag>
-                ) : (
-                  <Tag color="success">✅ Завершено</Tag>
+            <Progress 
+              type="dashboard" 
+              percent={attack.percent} 
+              strokeColor={conicColors}
+            />
+          </div>
+        ))}
+        </div> */}
+        {activeMods.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>🎮 Активные атаки ({activeMods.length})</h3>
+          <div className="attacks-container">
+            {activeMods.map(attack => (
+              <div key={attack.id} className={`attack-card ${attack.status}`}>
+                <div className="attack-header">
+                  <span>📁 {attack.filename}</span>
+                  {attack.status === 'running' ? (
+                    <Button 
+                      danger 
+                      size="small" 
+                      onClick={() => stopMod(attack.id)}
+                    >
+                      🛑 Остановить
+                    </Button>
+                  ) : attack.status === 'stopped' ? (
+                      <Tag color="default">Остановлена</Tag>
+                  ) : (
+                    <Tag color="success">✅ Завершено</Tag>
+                  )}
+                </div>
+                
+                <div className="attack-progress">
+                  <Progress 
+                    type="dashboard" 
+                    percent={attack.percent}
+                    strokeColor={conicColors}
+                  />
+                </div>
+                
+                {attack.status === 'running' && (
+                  <Countdown 
+                    value={attack.deadLine} 
+                    // onFinish={() => {}} 
+                    format="HH:mm:ss"
+                  />
+                )}
+                {/* ✅ Для stopped показываем "00:00:00" */}
+                {attack.status === 'stopped' && (
+                  <div className="countdown-timer" style={{color: '#ff4d4f'}}>
+                    00:00:00 🛑
+                  </div>
                 )}
               </div>
-              
-              <div className="attack-progress">
-                <Progress 
-                  type="dashboard" 
-                  percent={attack.percent}
-                  strokeColor={conicColors}
-                />
-              </div>
-              
-              {attack.status === 'running' && (
-                <Countdown 
-                  value={attack.deadLine} 
-                  onFinish={() => {}} 
-                  format="HH:mm:ss"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        
-        {/* ✅ Кнопка очистки */}
-        {activeMods.some(a => a.status === 'completed') && (
-          <Button 
-            onClick={clearCompletedMod} 
-            type="dashed"
-            style={{ marginTop: '10px' }}
-          >
-            🗑️ Очистить завершённые (
-            {activeMods.filter(a => a.status === 'completed').length}
-            )
-          </Button>
+            ))}
+          </div>
+          
+          {/* ✅ Кнопка очистки */}
+          {activeMods.some(a => a.status === 'completed') && (
+            <Button 
+              onClick={clearCompletedMod} 
+              type="dashed"
+              style={{ marginTop: '10px' }}
+            >
+              🗑️ Очистить завершённые (
+              {activeMods.filter(a => a.status === 'completed').length}
+              )
+            </Button>
+          )}
+          {/* ✅ Показываем кнопку ТОЛЬКО если есть остановленные */}
+          {activeMods.some(a => a.status === 'stopped') && (
+            <Button 
+              danger 
+              type="dashed"
+              onClick={clearStoppedMod}
+              style={{ marginRight: '8px' }}
+            >
+              🗑️ Очистить остановленные (
+              {activeMods.filter(a => a.status === 'stopped').length}
+              )
+            </Button>
         )}
-      </div>
+        </div>)}
+        </Flex>
+      ) : (
+        <div className="centered">
+          <Space
+            direction="vertical"
+            size="middle"
+            style={{
+              display: "flex",
+            }}
+          >
+            <div className="centered">
+              <p>У вас пока нет запущенных атак.</p>
+              <p>Хотите запустить атаку?</p>
+            </div>
+            <div className="centered">
+              <Button
+                color="danger"
+                variant="solid"
+                onClick={() =>
+                  handleButtonClick("modified", "mod", "Ваши атаки")
+                }
+              >
+                Да!
+              </Button>
+            </div>
+          </Space>
+        </div>
       )}
-      </Flex>
       <div className="home_container">
         <Button
           color="danger"

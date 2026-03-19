@@ -62,12 +62,14 @@ const ModTable = ({ data, user, token, fetchData }) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
     setStopFilenameMod(filename)
+    const attackId = Date.now() + Math.random().toString(36);  // ✅ Генерим ID
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/play/${filename}`, null, {
+      const response = await axios.post(`http://127.0.0.1:8000/play/${filename}`, { attack_id: attackId }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      const { pid, attack_id } = response.data;  // ✅ Получаем обратно
       const parsedData = JSON.parse(response.data);
-      startMod(filename, parseFloat(parsedData.duration));
+      startMod(filename, parseFloat(parsedData.duration), attackId, pid);
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineMod(duration);
       setRemainingTimeMod(parsedData.duration * 1000);
