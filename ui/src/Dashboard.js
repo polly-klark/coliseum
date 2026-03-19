@@ -591,7 +591,18 @@ const Dashboard = ({ token }) => {
     <>
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
       <Divider />
-      <p style={{ textAlign: "center" }}>Запущенные атаки</p>
+      <p style={{ 
+        textAlign: "center",
+        fontSize: "28px",           // ✅ БОЛЬШОЙ размер
+        color: "#ff4d4f",           // ✅ КРАСНЫЙ цвет
+        fontWeight: "bold",         // ✅ ЖИРНЫЙ
+        fontFamily: "Arial Black, sans-serif",  // ✅ Крутой шрифт
+        textShadow: "2px 2px 4px rgba(0,0,0,0.3)",  // ✅ Тень для объёма
+        margin: "20px 0",
+        letterSpacing: "1px"        // ✅ Расстояние между буквами
+      }}>
+      Запущенные атаки
+      </p>
       {activeMods.length > 0 ? (
         <Flex gap="small" wrap>
         {/* <div className="active-attacks">
@@ -714,7 +725,18 @@ const Dashboard = ({ token }) => {
         </div>
       )}
       <Divider />
-      <p style={{ textAlign: "center" }}>Запущенные шаблоны атак</p>
+      <p style={{ 
+        textAlign: "center",
+        fontSize: "28px",           // ✅ БОЛЬШОЙ размер
+        color: "#722ed1",           // ✅ КРАСНЫЙ цвет
+        fontWeight: "bold",         // ✅ ЖИРНЫЙ
+        fontFamily: "Arial Black, sans-serif",  // ✅ Крутой шрифт
+        textShadow: "2px 2px 4px rgba(0,0,0,0.3)",  // ✅ Тень для объёма
+        margin: "20px 0",
+        letterSpacing: "1px"        // ✅ Расстояние между буквами
+      }}>
+      Запущенные шаблоны атак
+      </p>
       {activeAttacks.length > 0 ? (
         <Flex gap="small" wrap>
         {/* <div className="active-attacks">
@@ -837,7 +859,18 @@ const Dashboard = ({ token }) => {
         </div>
       )}
       <Divider />
-      <p style={{ textAlign: "center" }}>Запущенный фоновый трафик</p>
+      <p style={{ 
+        textAlign: "center",
+        fontSize: "28px",           // ✅ БОЛЬШОЙ размер
+        color: "#1677ff",           // ✅ КРАСНЫЙ цвет
+        fontWeight: "bold",         // ✅ ЖИРНЫЙ
+        fontFamily: "Arial Black, sans-serif",  // ✅ Крутой шрифт
+        textShadow: "2px 2px 4px rgba(0,0,0,0.3)",  // ✅ Тень для объёма
+        margin: "20px 0",
+        letterSpacing: "1px"        // ✅ Расстояние между буквами
+      }}>
+      Запущенный фоновый трафик
+      </p>
       {activeBgs.length > 0 ? (
         <Flex gap="small" wrap>
         {/* <div className="active-attacks">
