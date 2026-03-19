@@ -15,6 +15,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
     onFinishMod,
     remainingTimeMod, setRemainingTimeMod,
     initialRemainingTimeRefMod,
+    startMod,
   } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -66,6 +67,7 @@ const ModTable = ({ data, user, token, fetchData }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       const parsedData = JSON.parse(response.data);
+      startMod(filename, parseFloat(parsedData.duration));
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineMod(duration);
       setRemainingTimeMod(parsedData.duration * 1000);

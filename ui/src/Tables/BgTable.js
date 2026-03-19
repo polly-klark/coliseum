@@ -15,6 +15,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
     onFinishBg,
     remainingTimeBg, setRemainingTimeBg,
     initialRemainingTimeRefBg,
+    startBg,
   } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -68,6 +69,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
         },
       });
       const parsedData = JSON.parse(response.data);
+      startBg(filename, parseFloat(parsedData.duration));
       const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
       setDeadLineBg(duration);
       setRemainingTimeBg(parsedData.duration * 1000);

@@ -85,6 +85,8 @@ export function PlayProvider({ children }) {
 // }, [remainingTimeAttack]);
 
 const [activeAttacks, setActiveAttacks] = useState([]);  // ✅ Массив атак!
+const [activeBgs, setActiveBgs] = useState([]);  // ✅ Массив атак!
+const [activeMods, setActiveMods] = useState([]);  // ✅ Массив атак!
   
 // ✅ Добавляем новую атаку
 const startAttack = (filename, durationSeconds) => {
@@ -104,11 +106,109 @@ const startAttack = (filename, durationSeconds) => {
   console.log('🚀 Запуск атаки:', newAttack);
   setActiveAttacks(prev => [...prev, newAttack]);
 };
+// ✅ Добавляем новую атаку
+const startBg = (filename, durationSeconds) => {
+  const attackId = Date.now() + Math.random().toString(36);  // Уникальный ID
+  const deadLine = Date.now() + durationSeconds * 1000;
+  const initialDuration = durationSeconds * 1000;
+  
+  const newAttack = {
+    id: attackId,
+    filename,
+    deadLine,
+    initialDuration,
+    percent: 0,
+    status: 'running'  // running | completed
+  };
+  
+  console.log('🚀 Запуск атаки:', newAttack);
+  setActiveBgs(prev => [...prev, newAttack]);
+};
+// ✅ Добавляем новую атаку
+const startMod = (filename, durationSeconds) => {
+  const attackId = Date.now() + Math.random().toString(36);  // Уникальный ID
+  const deadLine = Date.now() + durationSeconds * 1000;
+  const initialDuration = durationSeconds * 1000;
+  
+  const newAttack = {
+    id: attackId,
+    filename,
+    deadLine,
+    initialDuration,
+    percent: 0,
+    status: 'running'  // running | completed
+  };
+  
+  console.log('🚀 Запуск атаки:', newAttack);
+  setActiveMods(prev => [...prev, newAttack]);
+};
 
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prevAttacks => 
+      prevAttacks.map(attack => {
+        if (attack.status === 'completed') {
+          return attack;
+        }  // ✅ Не трогаем завершённые!
+        // const now = Date.now();
+        // const elapsed = now - (attack.deadLine - attack.initialDuration);
+        // const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        const startTime = attack.deadLine - attack.initialDuration;
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        
+        // ✅ Помечаем завершённые
+        if (progress >= 100) {
+          return {
+            ...attack,
+            percent: 100,
+            status: 'completed'
+          };
+        }
+        
+        return { ...attack, percent: progress };
+      })  // Удаляем завершённые
+    );
+  }, 100);
+  
+  return () => clearInterval(interval);
+}, []);
+// ✅ Синхронизируем прогресс ВСЕХ атак
+useEffect(() => {
+  const interval = setInterval(() => {
+    setActiveBgs(prevAttacks => 
+      prevAttacks.map(attack => {
+        if (attack.status === 'completed') {
+          return attack;
+        }  // ✅ Не трогаем завершённые!
+        // const now = Date.now();
+        // const elapsed = now - (attack.deadLine - attack.initialDuration);
+        // const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        const startTime = attack.deadLine - attack.initialDuration;
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
+        
+        // ✅ Помечаем завершённые
+        if (progress >= 100) {
+          return {
+            ...attack,
+            percent: 100,
+            status: 'completed'
+          };
+        }
+        
+        return { ...attack, percent: progress };
+      })  // Удаляем завершённые
+    );
+  }, 100);
+  
+  return () => clearInterval(interval);
+}, []);
+// ✅ Синхронизируем прогресс ВСЕХ атак
+useEffect(() => {
+  const interval = setInterval(() => {
+    setActiveMods(prevAttacks => 
       prevAttacks.map(attack => {
         if (attack.status === 'completed') {
           return attack;
@@ -147,9 +247,35 @@ const stopAttack = (attackId) => {
     return updated;
   });
 };
+const stopBg = (attackId) => {
+  setActiveBgs(prev => {
+    const updated = prev.map(attack => 
+      attack.id === attackId 
+        ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
+        : attack
+    );
+    return updated;
+  });
+};
+const stopMod = (attackId) => {
+  setActiveMods(prev => {
+    const updated = prev.map(attack => 
+      attack.id === attackId 
+        ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
+        : attack
+    );
+    return updated;
+  });
+};
 
-const clearCompleted = () => {
+const clearCompletedAttack = () => {
   setActiveAttacks(prev => prev.filter(attack => attack.status !== 'completed'));
+};
+const clearCompletedBg = () => {
+  setActiveBgs(prev => prev.filter(attack => attack.status !== 'completed'));
+};
+const clearCompletedMod = () => {
+  setActiveMods(prev => prev.filter(attack => attack.status !== 'completed'));
 };
 
   return (
@@ -176,7 +302,15 @@ const clearCompleted = () => {
       activeAttacks,
       startAttack,
       stopAttack,
-      clearCompleted,
+      clearCompletedAttack,
+      activeBgs,
+      startBg,
+      stopBg,
+      clearCompletedBg,
+      activeMods,
+      startMod,
+      stopMod,
+      clearCompletedMod,
     }}>
       {children}
     </PlayContext.Provider>
@@ -220,7 +354,15 @@ const Dashboard = ({ token }) => {
     activeAttacks,
     startAttack,
     stopAttack,
-    clearCompleted,
+    clearCompletedAttack,
+    activeBgs,
+    startBg,
+    stopBg,
+    clearCompletedBg,
+    activeMods,
+    startMod,
+    stopMod,
+    clearCompletedMod,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -448,7 +590,7 @@ const Dashboard = ({ token }) => {
         {/* ✅ Кнопка очистки */}
         {activeAttacks.some(a => a.status === 'completed') && (
           <Button 
-            onClick={clearCompleted} 
+            onClick={clearCompletedAttack} 
             type="dashed"
             style={{ marginTop: '10px' }}
           >
@@ -458,7 +600,7 @@ const Dashboard = ({ token }) => {
           </Button>
         )}
       </div>
-    )}
+      )}
       </Flex>
       <Divider />
       <Space>
@@ -483,6 +625,63 @@ const Dashboard = ({ token }) => {
         />
       </Space>
       <Flex gap="small" wrap>
+      {activeBgs.length > 0 && (
+      <div style={{ marginTop: '20px' }}>
+        <h3>🎮 Активные атаки ({activeBgs.length})</h3>
+        
+        <div className="attacks-container">
+          {activeBgs.map(attack => (
+            <div key={attack.id} className={`attack-card ${attack.status}`}>
+              <div className="attack-header">
+                <span>📁 {attack.filename}</span>
+                {attack.status === 'running' ? (
+                  <Button 
+                    danger 
+                    size="small" 
+                    onClick={() => stopBg(attack.id)}
+                  >
+                    🛑 Остановить
+                  </Button>
+                ) : attack.status === 'stopped' ? (
+                    <Tag color="default">⏸️ Приостановлена нет</Tag>
+                ) : (
+                  <Tag color="success">✅ Завершено</Tag>
+                )}
+              </div>
+              
+              <div className="attack-progress">
+                <Progress 
+                  type="dashboard" 
+                  percent={attack.percent}
+                  strokeColor={conicColors}
+                />
+              </div>
+              
+              {attack.status === 'running' && (
+                <Countdown 
+                  value={attack.deadLine} 
+                  onFinish={() => {}} 
+                  format="HH:mm:ss"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* ✅ Кнопка очистки */}
+        {activeBgs.some(a => a.status === 'completed') && (
+          <Button 
+            onClick={clearCompletedBg} 
+            type="dashed"
+            style={{ marginTop: '10px' }}
+          >
+            🗑️ Очистить завершённые (
+            {activeBgs.filter(a => a.status === 'completed').length}
+            )
+          </Button>
+        )}
+      </div>
+      )}
       </Flex>
       <Divider />
       <Space>
@@ -507,6 +706,63 @@ const Dashboard = ({ token }) => {
         />
       </Space>
       <Flex gap="small" wrap>
+      {activeMods.length > 0 && (
+      <div style={{ marginTop: '20px' }}>
+        <h3>🎮 Активные атаки ({activeMods.length})</h3>
+        
+        <div className="attacks-container">
+          {activeMods.map(attack => (
+            <div key={attack.id} className={`attack-card ${attack.status}`}>
+              <div className="attack-header">
+                <span>📁 {attack.filename}</span>
+                {attack.status === 'running' ? (
+                  <Button 
+                    danger 
+                    size="small" 
+                    onClick={() => stopMod(attack.id)}
+                  >
+                    🛑 Остановить
+                  </Button>
+                ) : attack.status === 'stopped' ? (
+                    <Tag color="default">⏸️ Приостановлена нет</Tag>
+                ) : (
+                  <Tag color="success">✅ Завершено</Tag>
+                )}
+              </div>
+              
+              <div className="attack-progress">
+                <Progress 
+                  type="dashboard" 
+                  percent={attack.percent}
+                  strokeColor={conicColors}
+                />
+              </div>
+              
+              {attack.status === 'running' && (
+                <Countdown 
+                  value={attack.deadLine} 
+                  onFinish={() => {}} 
+                  format="HH:mm:ss"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* ✅ Кнопка очистки */}
+        {activeMods.some(a => a.status === 'completed') && (
+          <Button 
+            onClick={clearCompletedMod} 
+            type="dashed"
+            style={{ marginTop: '10px' }}
+          >
+            🗑️ Очистить завершённые (
+            {activeMods.filter(a => a.status === 'completed').length}
+            )
+          </Button>
+        )}
+      </div>
+      )}
       </Flex>
       <div className="home_container">
         <Button
