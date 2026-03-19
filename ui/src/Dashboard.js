@@ -107,14 +107,14 @@ const startAttack = (filename, durationSeconds, attackId, pid) => {
   setActiveAttacks(prev => [...prev, newAttack]);
 };
 // ✅ Добавляем новую атаку
-const startBg = (filename, durationSeconds) => {
-  const attackId = Date.now() + Math.random().toString(36);  // Уникальный ID
+const startBg = (filename, durationSeconds, attackId, pid) => {
   const deadLine = Date.now() + durationSeconds * 1000;
   const initialDuration = durationSeconds * 1000;
   
   const newAttack = {
     id: attackId,
     filename,
+    pid,
     deadLine,
     initialDuration,
     percent: 0,
@@ -125,14 +125,14 @@ const startBg = (filename, durationSeconds) => {
   setActiveBgs(prev => [...prev, newAttack]);
 };
 // ✅ Добавляем новую атаку
-const startMod = (filename, durationSeconds) => {
-  const attackId = Date.now() + Math.random().toString(36);  // Уникальный ID
+const startMod = (filename, durationSeconds, attackId, pid) => {
   const deadLine = Date.now() + durationSeconds * 1000;
   const initialDuration = durationSeconds * 1000;
   
   const newAttack = {
     id: attackId,
     filename,
+    pid,
     deadLine,
     initialDuration,
     percent: 0,
@@ -183,8 +183,12 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveBgs(prevAttacks => 
       prevAttacks.map(attack => {
-        if (attack.status === 'completed') {
-          return attack;
+        if (attack.status === 'completed' || attack.status === 'stopped') {
+          return {
+            ...attack,
+            percent: attack.percent,  // ✅ Замораживаем %!
+            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
+          };
         }  // ✅ Не трогаем завершённые!
         // const now = Date.now();
         // const elapsed = now - (attack.deadLine - attack.initialDuration);
@@ -214,8 +218,12 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveMods(prevAttacks => 
       prevAttacks.map(attack => {
-        if (attack.status === 'completed') {
-          return attack;
+        if (attack.status === 'completed' || attack.status === 'stopped') {
+          return {
+            ...attack,
+            percent: attack.percent,  // ✅ Замораживаем %!
+            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
+          };
         }  // ✅ Не трогаем завершённые!
         // const now = Date.now();
         // const elapsed = now - (attack.deadLine - attack.initialDuration);
@@ -255,6 +263,68 @@ const stopAttack = async (attackId) => {
     });
 
     /// 3️⃣ Backend: только attackId!
+    console.log(`🛑 Останавливаю шаблон ${attackId}`);
+    await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
+    message.success(`🛑 "${attack?.filename || 'шаблон'}" остановлен`);  // ✅ Безопасно!
+    
+  } catch (error) {
+    console.error("Ошибка при остановке:", error);
+    message.error(`Ошибка при остановке`);
+    // ✅ Откатываем статус если backend упал
+    // setActiveAttacks(prev => {
+    //   const updated = prev.map(attack => 
+    //     attack.id === attackId 
+    //       ? { ...attack, status: 'running' }
+    //       : attack
+    //   );
+    //   return updated;
+    // });
+  }
+};
+const stopBg = async (attackId) => {
+  const attack = activeBgs.find(a => a.id === attackId);
+  try {
+    // 2️⃣ Frontend: меняем статус
+    setActiveBgs(prev => {
+      const updated = prev.map(a => 
+        a.id === attackId 
+          ? { ...a, status: 'stopped', percent: a.percent }
+          : a
+      );
+      return updated;
+    });
+    /// 3️⃣ Backend: только attackId!
+    console.log(`🛑 Останавливаю фоновый ${attackId}`);
+    await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
+    message.success(`🛑 "${attack?.filename || 'фоновый трафик'}" остановлен`);  // ✅ Безопасно!
+    
+  } catch (error) {
+    console.error("Ошибка при остановке:", error);
+    message.error(`Ошибка при остановке`);
+    // ✅ Откатываем статус если backend упал
+    // setActiveAttacks(prev => {
+    //   const updated = prev.map(attack => 
+    //     attack.id === attackId 
+    //       ? { ...attack, status: 'running' }
+    //       : attack
+    //   );
+    //   return updated;
+    // });
+  }
+};
+const stopMod = async (attackId) => {
+  const attack = activeMods.find(a => a.id === attackId);
+  try {
+    // 2️⃣ Frontend: меняем статус
+    setActiveMods(prev => {
+      const updated = prev.map(a => 
+        a.id === attackId 
+          ? { ...a, status: 'stopped', percent: a.percent }
+          : a
+      );
+      return updated;
+    });
+    /// 3️⃣ Backend: только attackId!
     console.log(`🛑 Останавливаю атаку ${attackId}`);
     await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
     message.success(`🛑 "${attack?.filename || 'атака'}" остановлена`);  // ✅ Безопасно!
@@ -273,27 +343,6 @@ const stopAttack = async (attackId) => {
     // });
   }
 };
-const stopBg = (attackId) => {
-  setActiveBgs(prev => {
-    const updated = prev.map(attack => 
-      attack.id === attackId 
-        ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
-        : attack
-    );
-    return updated;
-  });
-};
-const stopMod = (attackId) => {
-  setActiveMods(prev => {
-    const updated = prev.map(attack => 
-      attack.id === attackId 
-        ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
-        : attack
-    );
-    
-    return updated;
-  });
-};
 
 const clearCompletedAttack = () => {
   setActiveAttacks(prev => prev.filter(attack => attack.status !== 'completed'));
@@ -307,6 +356,12 @@ const clearCompletedMod = () => {
 
 const clearStoppedAttack = () => {
   setActiveAttacks(prev => prev.filter(attack => attack.status !== 'stopped'));
+};
+const clearStoppedBg = () => {
+  setActiveBgs(prev => prev.filter(attack => attack.status !== 'stopped'));
+};
+const clearStoppedMod = () => {
+  setActiveMods(prev => prev.filter(attack => attack.status !== 'stopped'));
 };
 
   return (
@@ -337,11 +392,11 @@ const clearStoppedAttack = () => {
       activeBgs,
       startBg,
       stopBg,
-      clearCompletedBg,
+      clearCompletedBg, clearStoppedBg,
       activeMods,
       startMod,
       stopMod,
-      clearCompletedMod,
+      clearCompletedMod, clearStoppedMod,
     }}>
       {children}
     </PlayContext.Provider>
@@ -389,11 +444,11 @@ const Dashboard = ({ token }) => {
     activeBgs,
     startBg,
     stopBg,
-    clearCompletedBg,
+    clearCompletedBg, clearStoppedBg,
     activeMods,
     startMod,
     stopMod,
-    clearCompletedMod,
+    clearCompletedMod, clearStoppedMod,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -559,7 +614,6 @@ const Dashboard = ({ token }) => {
         {activeAttacks.length > 0 && (
         <div style={{ marginTop: '20px' }}>
           <h3>🎮 Активные атаки ({activeAttacks.length})</h3>
-          
           <div className="attacks-container">
             {activeAttacks.map(attack => (
               <div key={attack.id} className={`attack-card ${attack.status}`}>
@@ -660,86 +714,128 @@ const Dashboard = ({ token }) => {
         </div>
       )}
       <Divider />
-      <Space>
-      <p>Сейчас проигрывается из фонового трафика {stopFilenameBg}</p>
-        {stopFilenameBg !== "ничего" && (
-          <Button onClick={() => handleStopBg()}>Остановить</Button>
-        )}
-        {stopFilenameBg === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown 
-          value={deadLineBg} 
-          onFinish={onFinishBg}
-          onChange={(value) => {
-            // ✅ Countdown сам вычисляет оставшееся время!
-            const remainingMs = value;  // Миллисекунды от Countdown
-            setRemainingTimeBg(remainingMs);
+      <p style={{ textAlign: "center" }}>Запущенный фоновый трафик</p>
+      {activeBgs.length > 0 ? (
+        <Flex gap="small" wrap>
+        {/* <div className="active-attacks">
+        {activeAttacks.map(attack => (
+          <div key={attack.id} className="attack-progress">
+            <Space>
+              <p>🎮 {attack.filename}</p>
+              <Button onClick={() => stopAttack(attack.id)}>🛑 Остановить</Button>
+              <Countdown value={attack.deadLine} onFinish={() => stopAttack(attack.id)} />
+            </Space>
             
-            // Прогресс от реального оставшегося времени
-            const totalDuration = initialRemainingTimeRefBg.current;  // 25000ms
-            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
-            setPercentBg(progress);
-          }}
-        />
-      </Space>
-      <Flex gap="small" wrap>
-      {activeBgs.length > 0 && (
-      <div style={{ marginTop: '20px' }}>
-        <h3>🎮 Активные атаки ({activeBgs.length})</h3>
-        
-        <div className="attacks-container">
-          {activeBgs.map(attack => (
-            <div key={attack.id} className={`attack-card ${attack.status}`}>
-              <div className="attack-header">
-                <span>📁 {attack.filename}</span>
-                {attack.status === 'running' ? (
-                  <Button 
-                    danger 
-                    size="small" 
-                    onClick={() => stopBg(attack.id)}
-                  >
-                    🛑 Остановить
-                  </Button>
-                ) : attack.status === 'stopped' ? (
-                    <Tag color="default">⏸️ Приостановлена нет</Tag>
-                ) : (
-                  <Tag color="success">✅ Завершено</Tag>
+            <Progress 
+              type="dashboard" 
+              percent={attack.percent} 
+              strokeColor={conicColors}
+            />
+          </div>
+        ))}
+        </div> */}
+        {activeBgs.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>🎮 Активные атаки ({activeBgs.length})</h3>
+          <div className="attacks-container">
+            {activeBgs.map(attack => (
+              <div key={attack.id} className={`attack-card ${attack.status}`}>
+                <div className="attack-header">
+                  <span>📁 {attack.filename}</span>
+                  {attack.status === 'running' ? (
+                    <Button 
+                      danger 
+                      size="small" 
+                      onClick={() => stopBg(attack.id)}
+                    >
+                      🛑 Остановить
+                    </Button>
+                  ) : attack.status === 'stopped' ? (
+                      <Tag color="error">⏸️ Приостановлена нет</Tag>
+                  ) : (
+                    <Tag color="success">✅ Завершено</Tag>
+                  )}
+                </div>
+                
+                <div className="attack-progress">
+                  <Progress 
+                    type="dashboard" 
+                    percent={attack.percent}
+                    strokeColor={conicColors}
+                  />
+                </div>
+                
+                {attack.status === 'running' && (
+                  <Countdown 
+                    value={attack.deadLine} 
+                    // onFinish={() => {}} 
+                    format="HH:mm:ss"
+                  />
+                )}
+                {/* ✅ Для stopped показываем "00:00:00" */}
+                {attack.status === 'stopped' && (
+                  <div className="countdown-timer" style={{color: '#ff4d4f'}}>
+                    00:00:00 🛑
+                  </div>
                 )}
               </div>
-              
-              <div className="attack-progress">
-                <Progress 
-                  type="dashboard" 
-                  percent={attack.percent}
-                  strokeColor={conicColors}
-                />
-              </div>
-              
-              {attack.status === 'running' && (
-                <Countdown 
-                  value={attack.deadLine} 
-                  onFinish={() => {}} 
-                  format="HH:mm:ss"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        
-        {/* ✅ Кнопка очистки */}
-        {activeBgs.some(a => a.status === 'completed') && (
-          <Button 
-            onClick={clearCompletedBg} 
-            type="dashed"
-            style={{ marginTop: '10px' }}
-          >
-            🗑️ Очистить завершённые (
-            {activeBgs.filter(a => a.status === 'completed').length}
-            )
-          </Button>
+            ))}
+          </div>
+          
+          {/* ✅ Кнопка очистки */}
+          {activeBgs.some(a => a.status === 'completed') && (
+            <Button 
+              onClick={clearCompletedBg} 
+              type="dashed"
+              style={{ marginTop: '10px' }}
+            >
+              🗑️ Очистить завершённые (
+              {activeBgs.filter(a => a.status === 'completed').length}
+              )
+            </Button>
+          )}
+          {/* ✅ Показываем кнопку ТОЛЬКО если есть остановленные */}
+          {activeBgs.some(a => a.status === 'stopped') && (
+            <Button 
+              danger 
+              type="dashed"
+              onClick={clearStoppedBg}
+              style={{ marginRight: '8px' }}
+            >
+              🗑️ Очистить остановленные (
+              {activeBgs.filter(a => a.status === 'stopped').length}
+              )
+            </Button>
         )}
-      </div>
+        </div>)}
+        </Flex>
+      ) : (
+        <div className="centered">
+          <Space
+            direction="vertical"
+            size="middle"
+            style={{
+              display: "flex",
+            }}
+          >
+            <div className="centered">
+              <p>У вас пока нет запущенного фонового трафика.</p>
+              <p>Хотите запустить фоновый трафик?</p>
+            </div>
+            <div className="centered">
+              <Button
+                color="primary"
+                variant="solid"
+                onClick={() =>
+                  handleButtonClick("background", "background", "Фоновый трафик")
+                }
+              >
+                Да!
+              </Button>
+            </div>
+          </Space>
+        </div>
       )}
-      </Flex>
       <Divider />
       <Space>
       <p>Сейчас проигрывается из атак {stopFilenameMod}</p>
