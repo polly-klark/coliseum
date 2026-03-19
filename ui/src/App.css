@@ -177,3 +177,17 @@
   min-height: 100vh;             /* Высота экрана 
   padding: 20px;
 }*/
+
+.attack-card.stopped {
+  border: 3px solid #ff4d4f !important;      /* ✅ Красная жирная рамка */
+  background: linear-gradient(135deg, 
+    #fff2f2 0%, 
+    #ffe8e8 50%, 
+    #ffdddd 100%) !important;                 /* ✅ Красный градиент */
+  box-shadow: 0 4px 16px rgba(255, 77, 79, 0.3) !important;  /* ✅ Красная тень */
+  opacity: 1 !important;
+}
+
+.attack-card.stopped .ant-progress-text {
+  color: #ff4d4f !important;  /* ✅ Красный % */
+}

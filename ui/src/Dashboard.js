@@ -89,14 +89,14 @@ const [activeBgs, setActiveBgs] = useState([]);  // ✅ Массив атак!
 const [activeMods, setActiveMods] = useState([]);  // ✅ Массив атак!
   
 // ✅ Добавляем новую атаку
-const startAttack = (filename, durationSeconds) => {
-  const attackId = Date.now() + Math.random().toString(36);  // Уникальный ID
+const startAttack = (filename, durationSeconds, attackId, pid) => {
   const deadLine = Date.now() + durationSeconds * 1000;
   const initialDuration = durationSeconds * 1000;
   
   const newAttack = {
     id: attackId,
     filename,
+    pid,
     deadLine,
     initialDuration,
     percent: 0,
@@ -148,8 +148,12 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prevAttacks => 
       prevAttacks.map(attack => {
-        if (attack.status === 'completed') {
-          return attack;
+        if (attack.status === 'completed' || attack.status === 'stopped') {
+          return {
+            ...attack,
+            percent: attack.percent,  // ✅ Замораживаем %!
+            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
+          };
         }  // ✅ Не трогаем завершённые!
         // const now = Date.now();
         // const elapsed = now - (attack.deadLine - attack.initialDuration);
@@ -237,15 +241,37 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
-const stopAttack = (attackId) => {
-  setActiveAttacks(prev => {
-    const updated = prev.map(attack => 
-      attack.id === attackId 
-        ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
-        : attack
-    );
-    return updated;
-  });
+const stopAttack = async (attackId) => {
+  const attack = activeAttacks.find(a => a.id === attackId);
+  try {
+    // 2️⃣ Frontend: меняем статус
+    setActiveAttacks(prev => {
+      const updated = prev.map(a => 
+        a.id === attackId 
+          ? { ...a, status: 'stopped', percent: a.percent }
+          : a
+      );
+      return updated;
+    });
+
+    /// 3️⃣ Backend: только attackId!
+    console.log(`🛑 Останавливаю атаку ${attackId}`);
+    await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
+    message.success(`🛑 "${attack?.filename || 'атака'}" остановлена`);  // ✅ Безопасно!
+    
+  } catch (error) {
+    console.error("Ошибка при остановке:", error);
+    message.error(`Ошибка при остановке`);
+    // ✅ Откатываем статус если backend упал
+    // setActiveAttacks(prev => {
+    //   const updated = prev.map(attack => 
+    //     attack.id === attackId 
+    //       ? { ...attack, status: 'running' }
+    //       : attack
+    //   );
+    //   return updated;
+    // });
+  }
 };
 const stopBg = (attackId) => {
   setActiveBgs(prev => {
@@ -264,6 +290,7 @@ const stopMod = (attackId) => {
         ? { ...attack, status: 'stopped', percent: attack.percent }  // ✅ Останавливаем!
         : attack
     );
+    
     return updated;
   });
 };
@@ -276,6 +303,10 @@ const clearCompletedBg = () => {
 };
 const clearCompletedMod = () => {
   setActiveMods(prev => prev.filter(attack => attack.status !== 'completed'));
+};
+
+const clearStoppedAttack = () => {
+  setActiveAttacks(prev => prev.filter(attack => attack.status !== 'stopped'));
 };
 
   return (
@@ -302,7 +333,7 @@ const clearCompletedMod = () => {
       activeAttacks,
       startAttack,
       stopAttack,
-      clearCompletedAttack,
+      clearCompletedAttack, clearStoppedAttack,
       activeBgs,
       startBg,
       stopBg,
@@ -354,7 +385,7 @@ const Dashboard = ({ token }) => {
     activeAttacks,
     startAttack,
     stopAttack,
-    clearCompletedAttack,
+    clearCompletedAttack, clearStoppedAttack,
     activeBgs,
     startBg,
     stopBg,
@@ -562,7 +593,7 @@ const Dashboard = ({ token }) => {
                     🛑 Остановить
                   </Button>
                 ) : attack.status === 'stopped' ? (
-                    <Tag color="default">⏸️ Приостановлена нет</Tag>
+                    <Tag color="error">🛑 Остановлена</Tag>
                 ) : (
                   <Tag color="success">✅ Завершено</Tag>
                 )}
@@ -579,9 +610,15 @@ const Dashboard = ({ token }) => {
               {attack.status === 'running' && (
                 <Countdown 
                   value={attack.deadLine} 
-                  onFinish={() => {}} 
+                  // onFinish={() => {}} 
                   format="HH:mm:ss"
                 />
+              )}
+              {/* ✅ Для stopped показываем "00:00:00" */}
+              {attack.status === 'stopped' && (
+                <div className="countdown-timer" style={{color: '#ff4d4f'}}>
+                  00:00:00 🛑
+                </div>
               )}
             </div>
           ))}
@@ -599,8 +636,20 @@ const Dashboard = ({ token }) => {
             )
           </Button>
         )}
-      </div>
+        {/* ✅ Показываем кнопку ТОЛЬКО если есть остановленные */}
+        {activeAttacks.some(a => a.status === 'stopped') && (
+          <Button 
+            danger 
+            type="dashed"
+            onClick={clearStoppedAttack}
+            style={{ marginRight: '8px' }}
+          >
+            🗑️ Очистить остановленные (
+            {activeAttacks.filter(a => a.status === 'stopped').length}
+            )
+          </Button>
       )}
+      </div>)}
       </Flex>
       <Divider />
       <Space>

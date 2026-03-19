@@ -35,11 +35,12 @@ app.add_middleware(
 logging.basicConfig(filename='playApp.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def run_tcpreplay(temp_file_path: str, delay: float):
+async def run_tcpreplay(temp_file_path: str, delay: float, attack_id: str):
     try:
         process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
         pid = process.pid
-        r.set('tcpreplay:pid', pid)
+        r.set(f'tcpreplay:pid:{attack_id}', pid)     # pid по attack_id
+        r.set(f'tcpreplay:attack:{pid}', attack_id)   # attack_id по pid
         r.set('file:path', temp_file_path)
         await asyncio.sleep(delay + 1)
 
@@ -60,6 +61,9 @@ async def get_hello():
 
 @app.post("/receive_file")
 async def receive_file(request: Request, background_tasks: BackgroundTasks):
+    # ✅ Получаем attack_id из HEADERS (от main сервера)
+    attack_id = request.headers.get("attack-id")
+    logger.info(f"📥 ПРОКСИ: файл для атаки '{attack_id}'")  # ← Теперь НЕ None!
     # Создаем временный файл для сохранения содержимого
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         try:
@@ -67,7 +71,7 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
                 temp_file.write(chunk)
 
             temp_file_path = temp_file.name  # Сохраняем имя временного файла
-            logger.info(f"Файл находится в {temp_file_path}")
+            logger.info(f"Файл находится в {temp_file_path} для атаки {attack_id}")
             
         except Exception as e:
             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
@@ -79,24 +83,37 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
-    background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration))
+    background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration), attack_id)
 
     # Возвращаем длительность проигрывания вместе с сообщением
-    return {"message": f"File {filename} received successfully", "duration": duration}
+    return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id}
 
 @app.post("/stop")
-async def stop():
-    logger.info("Щас как остановлю")
-    pid = r.get('tcpreplay:pid')
-    pid = int(pid.decode('utf-8'))
+async def stop(data: dict):  # ✅ Принимаем данные!
+    attack_id = data.get("attack_id")
+    logger.info(f"🛑 Останавливаем атаку {attack_id}")
+    
+    # ✅ Получаем PID по attack_id
+    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+    if not pid_data:
+        return {"message": f"Атака {attack_id} не найдена"}
+    
+    pid = int(pid_data.decode('utf-8'))
     mes = "Всё хорошо"
+    
     try:
         process = psutil.Process(pid)
         process.terminate()
     except psutil.NoSuchProcess:
         mes = f"Процесс {pid} не найден"
-    finally:
-        temp_file_path = r.get('file:path')
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-    return {"message": f"{mes}"}
+    
+    # ✅ Удаляем ВСЕ ключи Redis для этой атаки
+    file_path = r.get(f'tcpreplay:file:{attack_id}')
+    r.delete(f'tcpreplay:pid:{attack_id}')
+    r.delete(f'tcpreplay:attack:{pid}')
+    if file_path:
+        file_path = file_path.decode('utf-8')
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    
+    return {"message": f"{mes} (attack_id: {attack_id})"}

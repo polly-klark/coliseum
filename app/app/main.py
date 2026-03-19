@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
@@ -6,6 +6,7 @@ import secrets, logging, tempfile, os, requests, httpx
 from jose import JWTError, jwt 
 from datetime import datetime, timezone, timedelta
 import scapy.all as scapy
+import json
 from models import User, hash_password, verify_password, rename_file, file_generator, ModificationRequest, PcapAnalyzer
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -581,7 +582,11 @@ async def delete_file(filename: str, user: User = Depends(get_current_user)):
 
 # Прокси
 @app.post("/play_attack/{filename}")
-async def send_file(filename: str):
+async def send_file(filename: str, request: Request):
+    # ✅ 1. Получаем attack_id из JSON body Frontend'а
+    body = await request.body()
+    frontend_data = json.loads(body) if body else {}
+    attack_id = frontend_data.get("attack_id", "unknown")
     logger.info(f"Передаю файл {filename} для запуска")
     # Открываем поток для чтения файла из GridFS по имени
     try:
@@ -596,12 +601,14 @@ async def send_file(filename: str):
             async for chunk in file_generator(grid_out):
                 yield chunk
         
-        logger.info(f"Подключаюсь к прокси: http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file")
+        headers = {
+            "filename": filename,
+            "attack-id": attack_id  # ✅ Главное добавление!
+        }
+        
+        logger.info(f"Подключаюсь к прокси: http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file, attack_id: {attack_id}")
         
         async with httpx.AsyncClient() as client:
-            headers = {
-            "filename": filename,
-            }
             response = await client.post(f"http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
             response.raise_for_status()  # Проверка статуса ответа        
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
@@ -671,11 +678,17 @@ async def send_file(filename: str, user: User = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Internal Server Error")
     return response.text
 
-@app.post("/stop")
-async def stop():
+@app.post("/stop/{attack_id}")
+async def stop_attack(attack_id: str):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://{IP_ADDDRES_FOR_PROXY}:9000/stop", timeout=None)
-    return response.text
+        logger.info(f"Хочу остановить {attack_id}")
+        # ✅ Передаём attack_id прокси!
+        response = await client.post(
+            f"http://{IP_ADDDRES_FOR_PROXY}:9000/stop", 
+            json={"attack_id": attack_id},  # ✅ Отправляем attack_id!
+            timeout=None
+        )
+        return {"status": "stopped", "message": response.json()}
 
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload
