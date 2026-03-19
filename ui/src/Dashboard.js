@@ -647,7 +647,7 @@ const Dashboard = ({ token }) => {
             </div>
             <div className="centered">
               <Button
-                color="primary"
+                color="purple"
                 variant="solid"
                 onClick={() =>
                   handleButtonClick("attack", "attack", "Шаблоны атак")
