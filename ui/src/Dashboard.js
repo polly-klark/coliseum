@@ -536,121 +536,129 @@ const Dashboard = ({ token }) => {
     <>
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
       <Divider />
-      <Space>
-      <p>Сейчас проигрывается из шаблонов {stopFilenameAttack}</p>
-        {stopFilenameAttack !== "ничего" && (
-          <Button onClick={() => handleStopAttack()}>Остановить</Button>
-        )}
-        {stopFilenameAttack === "ничего" && <Button disabled>Остановить</Button>}
-        <Countdown 
-          value={deadLineAttack} 
-          onFinish={onFinishAttack}
-          onChange={(value) => {
-            // ✅ Countdown сам вычисляет оставшееся время!
-            const remainingMs = value;  // Миллисекунды от Countdown
-            setRemainingTimeAttack(remainingMs);
+      <p style={{ textAlign: "center" }}>Запущенные шаблоны атак</p>
+      {activeAttacks.length > 0 ? (
+        <Flex gap="small" wrap>
+        {/* <div className="active-attacks">
+        {activeAttacks.map(attack => (
+          <div key={attack.id} className="attack-progress">
+            <Space>
+              <p>🎮 {attack.filename}</p>
+              <Button onClick={() => stopAttack(attack.id)}>🛑 Остановить</Button>
+              <Countdown value={attack.deadLine} onFinish={() => stopAttack(attack.id)} />
+            </Space>
             
-            // Прогресс от реального оставшегося времени
-            const totalDuration = initialRemainingTimeRefAttack.current;  // 25000ms
-            const progress = Math.floor(((totalDuration - remainingMs) / totalDuration) * 100);
-            setPercentAttack(progress);
-          }}
-        />
-      </Space>
-      <Flex gap="small" wrap>
-      {/* <div className="active-attacks">
-      {activeAttacks.map(attack => (
-        <div key={attack.id} className="attack-progress">
-          <Space>
-            <p>🎮 {attack.filename}</p>
-            <Button onClick={() => stopAttack(attack.id)}>🛑 Остановить</Button>
-            <Countdown value={attack.deadLine} onFinish={() => stopAttack(attack.id)} />
-          </Space>
+            <Progress 
+              type="dashboard" 
+              percent={attack.percent} 
+              strokeColor={conicColors}
+            />
+          </div>
+        ))}
+        </div> */}
+        {activeAttacks.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>🎮 Активные атаки ({activeAttacks.length})</h3>
           
-          <Progress 
-            type="dashboard" 
-            percent={attack.percent} 
-            strokeColor={conicColors}
-          />
-        </div>
-      ))}
-      </div> */}
-      {activeAttacks.length > 0 && (
-      <div style={{ marginTop: '20px' }}>
-        <h3>🎮 Активные атаки ({activeAttacks.length})</h3>
-        
-        <div className="attacks-container">
-          {activeAttacks.map(attack => (
-            <div key={attack.id} className={`attack-card ${attack.status}`}>
-              <div className="attack-header">
-                <span>📁 {attack.filename}</span>
-                {attack.status === 'running' ? (
-                  <Button 
-                    danger 
-                    size="small" 
-                    onClick={() => stopAttack(attack.id)}
-                  >
-                    🛑 Остановить
-                  </Button>
-                ) : attack.status === 'stopped' ? (
-                    <Tag color="error">🛑 Остановлена</Tag>
-                ) : (
-                  <Tag color="success">✅ Завершено</Tag>
+          <div className="attacks-container">
+            {activeAttacks.map(attack => (
+              <div key={attack.id} className={`attack-card ${attack.status}`}>
+                <div className="attack-header">
+                  <span>📁 {attack.filename}</span>
+                  {attack.status === 'running' ? (
+                    <Button 
+                      danger 
+                      size="small" 
+                      onClick={() => stopAttack(attack.id)}
+                    >
+                      🛑 Остановить
+                    </Button>
+                  ) : attack.status === 'stopped' ? (
+                      <Tag color="error">🛑 Остановлена</Tag>
+                  ) : (
+                    <Tag color="success">✅ Завершено</Tag>
+                  )}
+                </div>
+                
+                <div className="attack-progress">
+                  <Progress 
+                    type="dashboard" 
+                    percent={attack.percent}
+                    strokeColor={conicColors}
+                  />
+                </div>
+                
+                {attack.status === 'running' && (
+                  <Countdown 
+                    value={attack.deadLine} 
+                    // onFinish={() => {}} 
+                    format="HH:mm:ss"
+                  />
+                )}
+                {/* ✅ Для stopped показываем "00:00:00" */}
+                {attack.status === 'stopped' && (
+                  <div className="countdown-timer" style={{color: '#ff4d4f'}}>
+                    00:00:00 🛑
+                  </div>
                 )}
               </div>
-              
-              <div className="attack-progress">
-                <Progress 
-                  type="dashboard" 
-                  percent={attack.percent}
-                  strokeColor={conicColors}
-                />
-              </div>
-              
-              {attack.status === 'running' && (
-                <Countdown 
-                  value={attack.deadLine} 
-                  // onFinish={() => {}} 
-                  format="HH:mm:ss"
-                />
-              )}
-              {/* ✅ Для stopped показываем "00:00:00" */}
-              {attack.status === 'stopped' && (
-                <div className="countdown-timer" style={{color: '#ff4d4f'}}>
-                  00:00:00 🛑
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        
-        {/* ✅ Кнопка очистки */}
-        {activeAttacks.some(a => a.status === 'completed') && (
-          <Button 
-            onClick={clearCompletedAttack} 
-            type="dashed"
-            style={{ marginTop: '10px' }}
-          >
-            🗑️ Очистить завершённые (
-            {activeAttacks.filter(a => a.status === 'completed').length}
-            )
-          </Button>
+            ))}
+          </div>
+          
+          {/* ✅ Кнопка очистки */}
+          {activeAttacks.some(a => a.status === 'completed') && (
+            <Button 
+              onClick={clearCompletedAttack} 
+              type="dashed"
+              style={{ marginTop: '10px' }}
+            >
+              🗑️ Очистить завершённые (
+              {activeAttacks.filter(a => a.status === 'completed').length}
+              )
+            </Button>
+          )}
+          {/* ✅ Показываем кнопку ТОЛЬКО если есть остановленные */}
+          {activeAttacks.some(a => a.status === 'stopped') && (
+            <Button 
+              danger 
+              type="dashed"
+              onClick={clearStoppedAttack}
+              style={{ marginRight: '8px' }}
+            >
+              🗑️ Очистить остановленные (
+              {activeAttacks.filter(a => a.status === 'stopped').length}
+              )
+            </Button>
         )}
-        {/* ✅ Показываем кнопку ТОЛЬКО если есть остановленные */}
-        {activeAttacks.some(a => a.status === 'stopped') && (
-          <Button 
-            danger 
-            type="dashed"
-            onClick={clearStoppedAttack}
-            style={{ marginRight: '8px' }}
+        </div>)}
+        </Flex>
+      ) : (
+        <div className="centered">
+          <Space
+            direction="vertical"
+            size="middle"
+            style={{
+              display: "flex",
+            }}
           >
-            🗑️ Очистить остановленные (
-            {activeAttacks.filter(a => a.status === 'stopped').length}
-            )
-          </Button>
+            <div className="centered">
+              <p>У вас пока нет запущенных шаблонов атак.</p>
+              <p>Хотите запустить шаблон атаки?</p>
+            </div>
+            <div className="centered">
+              <Button
+                color="primary"
+                variant="solid"
+                onClick={() =>
+                  handleButtonClick("attack", "attack", "Шаблоны атак")
+                }
+              >
+                Да!
+              </Button>
+            </div>
+          </Space>
+        </div>
       )}
-      </div>)}
-      </Flex>
       <Divider />
       <Space>
       <p>Сейчас проигрывается из фонового трафика {stopFilenameBg}</p>
