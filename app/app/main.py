@@ -656,7 +656,11 @@ async def send_file(filename: str, request: Request):
     return response.text
 
 @app.post("/play/{filename}")
-async def send_file(filename: str, user: User = Depends(get_current_user)):
+async def send_file(filename: str, request: Request, user: User = Depends(get_current_user)):
+    # ✅ 1. Получаем attack_id из JSON body Frontend'а
+    body = await request.body()
+    frontend_data = json.loads(body) if body else {}
+    attack_id = frontend_data.get("attack_id", "unknown")
     db = clientDB[f"{user.username}_m"]
     fs = AsyncIOMotorGridFSBucket(db)
     logger.info(f"Передаю файл {filename} для запуска")
@@ -672,11 +676,15 @@ async def send_file(filename: str, user: User = Depends(get_current_user)):
         async def file_stream():
             async for chunk in file_generator(grid_out):
                 yield chunk
-
-        async with httpx.AsyncClient() as client:
-            headers = {
+        
+        headers = {
             "filename": filename,
-            }
+            "attack-id": attack_id  # ✅ Главное добавление!
+        }
+
+        logger.info(f"Подключаюсь к прокси: http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file, attack_id: {attack_id}")
+        
+        async with httpx.AsyncClient() as client:
             response = await client.post(f"http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file", content=file_stream(), headers=headers, timeout=None)
             response.raise_for_status()  # Проверка статуса ответа        
         # return StreamingResponse(file_generator(grid_out), media_type='application/octet-stream', headers={"Content-Disposition": f"attachment; filename={filename}"})
