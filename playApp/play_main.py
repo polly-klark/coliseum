@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess, psutil, redis, asyncio
+import os, tempfile, logging, subprocess, psutil, redis, asyncio, signal
 from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -129,10 +129,16 @@ async def pause(data: dict):
     
     pid = int(pid_data.decode('utf-8'))
     try:
-        os.kill(pid, signal.SIGSTOP)  # ✅ ПРИОСТАНОВИТЬ процесс!
-        logger.info(f"✅ Процесс {pid} приостановлен")
-        return {"status": "paused", "pid": pid}
+        os.kill(pid, signal.SIGTERM)
+
+        # Ждём смерти
+        for _ in range(10):
+            if not psutil.pid_exists(pid): break
+            await asyncio.sleep(0.5)
+        logger.info(f"Процесс {pid} остановлен")
+        return {"status": "paused"}
     except Exception as e:
+        logger.error(f"Ошибка паузы: {e}")
         return {"error": f"Ошибка паузы: {e}"}
 
 @app.post("/resume")
@@ -146,8 +152,10 @@ async def resume(data: dict):
     
     pid = int(pid_data.decode('utf-8'))
     try:
-        os.kill(pid, signal.SIGCONT)  # ✅ ПРОДОЛЖИТЬ процесс!
-        logger.info(f"✅ Процесс {pid} возобновлён")
-        return {"status": "running", "pid": pid}
+        process = psutil.Process(pid)
+        process.resume()  # ✅ Продолжить!
+        logger.info(f"▶️ {pid} resumed")
+        return {"status": "running"}
     except Exception as e:
+        logger.error(f"Ошибка SIGUSR2: {e}")
         return {"error": f"Ошибка возобновления: {e}"}
