@@ -208,3 +208,14 @@
   color: #faad14;
   font-style: italic;
 }
+.green-hover-btn {
+  margin-top: 10px !important;
+  border-color: #52c41a !important;
+  border: 1px dashed #52c41a !important;
+  color: black !important;
+  transition: color 0.3s ease !important;
+}
+
+.green-hover-btn:hover {
+  color: #52c41a !important;
+}

@@ -971,7 +971,7 @@ const Dashboard = ({ token }) => {
             <Button 
               onClick={clearCompletedBg} 
               type="dashed"
-              style={{ marginTop: '10px' }}
+              className="green-hover-btn"
             >
               🗑️ Очистить завершённые (
               {activeBgs.filter(a => a.status === 'completed').length}
