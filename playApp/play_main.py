@@ -117,3 +117,37 @@ async def stop(data: dict):  # ✅ Принимаем данные!
             os.remove(file_path)
     
     return {"message": f"{mes} (attack_id: {attack_id})"}
+
+@app.post("/pause")
+async def pause(data: dict):
+    attack_id = data.get("attack_id")
+    logger.info(f"⏸️ ПРОКСИ: пауза {attack_id}")
+    
+    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+    if not pid_data:
+        return {"error": f"Атака {attack_id} не найдена"}
+    
+    pid = int(pid_data.decode('utf-8'))
+    try:
+        os.kill(pid, signal.SIGSTOP)  # ✅ ПРИОСТАНОВИТЬ процесс!
+        logger.info(f"✅ Процесс {pid} приостановлен")
+        return {"status": "paused", "pid": pid}
+    except Exception as e:
+        return {"error": f"Ошибка паузы: {e}"}
+
+@app.post("/resume")
+async def resume(data: dict):
+    attack_id = data.get("attack_id")
+    logger.info(f"▶️ ПРОКСИ: возобновление {attack_id}")
+    
+    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+    if not pid_data:
+        return {"error": f"Атака {attack_id} не найдена"}
+    
+    pid = int(pid_data.decode('utf-8'))
+    try:
+        os.kill(pid, signal.SIGCONT)  # ✅ ПРОДОЛЖИТЬ процесс!
+        logger.info(f"✅ Процесс {pid} возобновлён")
+        return {"status": "running", "pid": pid}
+    except Exception as e:
+        return {"error": f"Ошибка возобновления: {e}"}

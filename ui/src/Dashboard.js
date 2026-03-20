@@ -148,7 +148,7 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prevAttacks => 
       prevAttacks.map(attack => {
-        if (attack.status === 'completed' || attack.status === 'stopped') {
+        if (attack.status === 'completed' || attack.status === 'stopped' || attack.status === 'paused') {
           return {
             ...attack,
             percent: attack.percent,  // ✅ Замораживаем %!
@@ -364,6 +364,30 @@ const clearStoppedMod = () => {
   setActiveMods(prev => prev.filter(attack => attack.status !== 'stopped'));
 };
 
+const pauseAttack = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/pause/${attackId}`);
+    setActiveAttacks(prev => prev.map(a => 
+      a.id === attackId ? { ...a, status: 'paused' } : a
+    ));
+    message.success('⏸️ Атака приостановлена');
+  } catch (error) {
+    message.error('Ошибка паузы');
+  }
+};
+
+const resumeAttack = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/resume/${attackId}`);
+    setActiveAttacks(prev => prev.map(a => 
+      a.id === attackId ? { ...a, status: 'running' } : a
+    ));
+    message.success('▶️ Атака возобновлена');
+  } catch (error) {
+    message.error('Ошибка возобновления');
+  }
+};
+
   return (
     <PlayContext.Provider value={{
       stopFilenameAttack, setStopFilenameAttack,
@@ -397,6 +421,7 @@ const clearStoppedMod = () => {
       startMod,
       stopMod,
       clearCompletedMod, clearStoppedMod,
+      pauseAttack, resumeAttack,
     }}>
       {children}
     </PlayContext.Provider>
@@ -449,6 +474,7 @@ const Dashboard = ({ token }) => {
     startMod,
     stopMod,
     clearCompletedMod, clearStoppedMod,
+    pauseAttack, resumeAttack
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -764,21 +790,24 @@ const Dashboard = ({ token }) => {
               <div key={attack.id} className={`attack-card ${attack.status}`}>
                 <div className="attack-header">
                   <span>📁 {attack.filename}</span>
-                  {attack.status === 'running' ? (
-                    <Button 
-                      danger 
-                      size="small" 
-                      onClick={() => stopAttack(attack.id)}
-                    >
-                      🛑 Остановить
-                    </Button>
-                  ) : attack.status === 'stopped' ? (
-                      <Tag color="error">🛑 Остановлена</Tag>
-                  ) : (
-                    <Tag color="success">✅ Завершено</Tag>
+                  {attack.status === 'running' && (
+                    <div>
+                      <Button size="small" onClick={() => pauseAttack(attack.id)}>
+                        ⏸️ Пауза
+                      </Button>
+                      <Button danger size="small" onClick={() => stopAttack(attack.id)}>
+                        🛑 Остановить
+                      </Button>
+                    </div>
                   )}
+                  {attack.status === 'paused' && (
+                    <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
+                      ▶️ Продолжить
+                    </Button>
+                  )}
+                  {attack.status === 'stopped' && <Tag color="error">🛑 Остановлена</Tag>}
+                  {attack.status === 'completed' && <Tag color="success">✅ Завершено</Tag>}
                 </div>
-                
                 <div className="attack-progress">
                   <Progress 
                     type="dashboard" 
@@ -786,7 +815,6 @@ const Dashboard = ({ token }) => {
                     strokeColor={conicColors}
                   />
                 </div>
-                
                 {attack.status === 'running' && (
                   <Countdown 
                     value={attack.deadLine} 

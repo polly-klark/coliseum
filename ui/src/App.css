@@ -134,8 +134,8 @@
 }
 
 .attack-card.completed {
-  border-color: #52c41a;
-  background: linear-gradient(135deg, #f6ffed 0%, #f0f9eb 100%);
+  border: 3px solid #52c41a !important;      /* ✅ border: ширина стиль цвет */
+  background: linear-gradient(135deg, #f6ffed 0%, #f0f9eb 100%) !important;
   opacity: 0.85;
 }
 
@@ -190,4 +190,21 @@
 
 .attack-card.stopped .ant-progress-text {
   color: #ff4d4f !important;  /* ✅ Красный % */
+}
+
+.attack-card.paused {
+  border: 3px solid #faad14 !important;         /* ✅ Жёлтая рамка */
+  background: linear-gradient(135deg, 
+    #fffbe6 0%, 
+    #fef7d9 100%) !important;                    /* ✅ Жёлтый градиент */
+  box-shadow: 0 4px 16px rgba(250, 173, 20, 0.3) !important;
+}
+
+.attack-card.paused .ant-progress-text {
+  color: #faad14 !important;  /* ✅ Жёлтый % */
+}
+
+.countdown-timer.paused {
+  color: #faad14;
+  font-style: italic;
 }

@@ -706,5 +706,27 @@ async def stop_attack(attack_id: str):
         )
         return {"status": "stopped", "message": response.json()}
 
+@app.post("/pause/{attack_id}")
+async def pause_attack(attack_id: str):
+    logger.info(f"⏸️ ПАУЗА атаки {attack_id}")
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"http://{IP_ADDDRES_FOR_PROXY}:9000/pause",
+            json={"attack_id": attack_id},
+            timeout=None
+        )
+        return {"status": "paused", "message": response.json()}
+
+@app.post("/resume/{attack_id}")
+async def resume_attack(attack_id: str):
+    logger.info(f"▶️ ВОЗОБНОВЛЕНИЕ атаки {attack_id}")
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"http://{IP_ADDDRES_FOR_PROXY}:9000/resume",
+            json={"attack_id": attack_id},
+            timeout=None
+        )
+        return {"status": "running", "message": response.json()}
+
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload
