@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess, psutil, redis, asyncio, signal
+import os, tempfile, logging, subprocess, psutil, redis, asyncio, signal, traceback
 from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -118,28 +118,88 @@ async def stop(data: dict):  # ✅ Принимаем данные!
     
     return {"message": f"{mes} (attack_id: {attack_id})"}
 
-@app.post("/pause")
-async def pause(data: dict):
-    attack_id = data.get("attack_id")
-    logger.info(f"⏸️ ПРОКСИ: пауза {attack_id}")
-    
-    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+@app.post("/pause/{attack_id}")
+async def pause_attack(attack_id: str):
+    pid_data = r.get(f"tcpreplay:pid:{attack_id}")
     if not pid_data:
-        return {"error": f"Атака {attack_id} не найдена"}
-    
-    pid = int(pid_data.decode('utf-8'))
-    try:
-        os.kill(pid, signal.SIGTERM)
+        logger.error(f"PAUSE[{attack_id}]: атака не найдена в Redis")
+        return {"error": "Атака не найдена"}
 
-        # Ждём смерти
-        for _ in range(10):
-            if not psutil.pid_exists(pid): break
-            await asyncio.sleep(0.5)
-        logger.info(f"Процесс {pid} остановлен")
-        return {"status": "paused"}
+    pid = int(pid_data.decode())
+    logger.info(f"🔍 ДИАГНОСТИКА PID={pid} для {attack_id}")
+
+    try:
+        if not psutil.pid_exists(pid):
+            logger.error(f"❌ PID {pid} уже НЕ существует!")
+            return {"error": "Процесс завершён"}
+
+        process = psutil.Process(pid)
+
+        # 1. ДО suspend — максимально безопасно
+        try:
+            status_before = process.status()
+        except Exception:
+            status_before = "unknown"
+
+        try:
+            cpu_before = process.cpu_percent()
+        except Exception:
+            cpu_before = None
+
+        try:
+            mem_before = process.memory_info().rss / 1024 / 1024
+        except Exception:
+            mem_before = None
+
+        logger.info(
+            f"📊 ДО: статус={status_before}, CPU={cpu_before}, память={mem_before} MB"
+        )
+
+        # 2. suspend
+        process.suspend()
+        logger.info(f"⏸️ suspend() отправлен PID={pid}")
+
+        # 3. ждём
+        await asyncio.sleep(2)
+
+        # 4. ПОСЛЕ suspend
+        if not psutil.pid_exists(pid):
+            logger.error(f"💀 PID {pid} УМЕР после suspend!")
+            return {"status": "paused", "process_alive": False}
+
+        process = psutil.Process(pid)
+
+        try:
+            status_after = process.status()
+        except Exception:
+            status_after = "unknown"
+
+        try:
+            cpu_after = process.cpu_percent()
+        except Exception:
+            cpu_after = None
+
+        try:
+            mem_after = process.memory_info().rss / 1024 / 1024
+        except Exception:
+            mem_after = None
+
+        logger.info(
+            f"📊 ПОСЛЕ suspend: статус={status_after}, CPU={cpu_after}, память={mem_after} MB"
+        )
+
+        return {
+            "status": "paused",
+            "process_alive": True,
+            "status_before": status_before,
+            "status_after": status_after,
+        }
+
     except Exception as e:
-        logger.error(f"Ошибка паузы: {e}")
-        return {"error": f"Ошибка паузы: {e}"}
+        logger.error(f"💥 PAUSE[{attack_id}] ERROR type={type(e).__name__} repr={e}")
+        return {"error": f"{type(e).__name__}: {e}"}
+
+
 
 @app.post("/resume")
 async def resume(data: dict):
@@ -157,5 +217,41 @@ async def resume(data: dict):
         logger.info(f"▶️ {pid} resumed")
         return {"status": "running"}
     except Exception as e:
-        logger.error(f"Ошибка SIGUSR2: {e}")
+        logger.error(f"Ошибка возобновления: {e}")
         return {"error": f"Ошибка возобновления: {e}"}
+
+@app.get("/status/{attack_id}")
+async def get_status(attack_id: str):
+    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+    if not pid_data:
+        return {"error": "Атака не найдена"}
+    
+    pid = int(pid_data.decode())
+    logger.info(f"Сейчас здесь будет статус атаки {attack_id}")
+    try:
+        if psutil.pid_exists(pid):
+            process = psutil.Process(pid)
+            info = {
+                "pid": pid,
+                "alive": True,
+                "status": process.status(),
+                "cpu": process.cpu_percent(),
+                "memory_mb": process.memory_info().rss / 1024 / 1024,
+                "threads": len(process.threads()),
+                # "connections": len(process.connections()),
+                "create_time": process.create_time(),
+            }
+            logger.info(f"STATUS[{attack_id}]: {info}")
+            return info
+        else:
+            logger.info(f"STATUS[{attack_id}]: pid={pid}, alive=False")
+            return {"pid": pid, "alive": False}
+    except Exception as e:
+        logger.error(
+            "STATUS[%s] ERROR type=%s repr=%r traceback=%s",
+            attack_id,
+            type(e).__name__,
+            e,
+            traceback.format_exc(),
+        )
+        return {"error": f"{type(e).__name__}: {e}"}

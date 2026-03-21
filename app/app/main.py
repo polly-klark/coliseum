@@ -728,5 +728,13 @@ async def resume_attack(attack_id: str):
         )
         return {"status": "running", "message": response.json()}
 
+# main.py (8000)
+@app.get("/status/{attack_id}")
+async def get_status(attack_id: str):
+    logger.info(f"Запрашиваю статус атаки {attack_id}")
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"http://{IP_ADDDRES_FOR_PROXY}:9000/status/{attack_id}")
+        return resp.json()
+
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload

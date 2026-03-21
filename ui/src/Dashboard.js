@@ -388,6 +388,11 @@ const resumeAttack = async (attackId) => {
   }
 };
 
+const getAttackStatus = async (attackId) => {
+  const resp = await axios.get(`http://127.0.0.1:8000/status/${attackId}`);
+  return resp.data;
+};
+
   return (
     <PlayContext.Provider value={{
       stopFilenameAttack, setStopFilenameAttack,
@@ -421,7 +426,7 @@ const resumeAttack = async (attackId) => {
       startMod,
       stopMod,
       clearCompletedMod, clearStoppedMod,
-      pauseAttack, resumeAttack,
+      pauseAttack, resumeAttack, getAttackStatus,
     }}>
       {children}
     </PlayContext.Provider>
@@ -474,7 +479,7 @@ const Dashboard = ({ token }) => {
     startMod,
     stopMod,
     clearCompletedMod, clearStoppedMod,
-    pauseAttack, resumeAttack
+    pauseAttack, resumeAttack, getAttackStatus,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -798,12 +803,46 @@ const Dashboard = ({ token }) => {
                       <Button danger size="small" onClick={() => stopAttack(attack.id)}>
                         🛑 Остановить
                       </Button>
+                      <Button
+                        size="small"
+                        onClick={async () => {
+                          try {
+                            const data = await getAttackStatus(attack.id);
+                            console.log("STATUS:", data);
+                            // при желании можно показать message:
+                            // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                          } catch (e) {
+                            console.error(e);
+                            message.error("Не удалось получить статус");
+                          }
+                        }}
+                      >
+                        🔍 Статус
+                      </Button>
                     </div>
                   )}
                   {attack.status === 'paused' && (
-                    <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
+                    <div>
+                      <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
                       ▶️ Продолжить
                     </Button>
+                    <Button
+                      size="small"
+                      onClick={async () => {
+                        try {
+                          const data = await getAttackStatus(attack.id);
+                          console.log("STATUS:", data);
+                          // при желании можно показать message:
+                          // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                        } catch (e) {
+                          console.error(e);
+                          message.error("Не удалось получить статус");
+                        }
+                      }}
+                    >
+                      🔍 Статус
+                    </Button>
+                    </div>
                   )}
                   {attack.status === 'stopped' && <Tag color="error">🛑 Остановлена</Tag>}
                   {attack.status === 'completed' && <Tag color="success">✅ Завершено</Tag>}
