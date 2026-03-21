@@ -138,31 +138,37 @@ async def pause_attack(attack_id: str):
         # 1. ДО suspend — максимально безопасно
         try:
             status_before = process.status()
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in status_before: {type(e).__name__} {e}"
+            )
             status_before = "unknown"
 
         try:
             cpu_before = process.cpu_percent()
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in cpu_before: {type(e).__name__} {e}"
+            )
             cpu_before = None
 
         try:
             mem_before = process.memory_info().rss / 1024 / 1024
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in mem_before: {type(e).__name__} {e}"
+            )
             mem_before = None
 
         logger.info(
             f"📊 ДО: статус={status_before}, CPU={cpu_before}, память={mem_before} MB"
         )
 
-        # 2. suspend
         process.suspend()
         logger.info(f"⏸️ suspend() отправлен PID={pid}")
 
-        # 3. ждём
         await asyncio.sleep(2)
 
-        # 4. ПОСЛЕ suspend
         if not psutil.pid_exists(pid):
             logger.error(f"💀 PID {pid} УМЕР после suspend!")
             return {"status": "paused", "process_alive": False}
@@ -171,17 +177,26 @@ async def pause_attack(attack_id: str):
 
         try:
             status_after = process.status()
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in status_after: {type(e).__name__} {e}"
+            )
             status_after = "unknown"
 
         try:
             cpu_after = process.cpu_percent()
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in cpu_after: {type(e).__name__} {e}"
+            )
             cpu_after = None
 
         try:
             mem_after = process.memory_info().rss / 1024 / 1024
-        except Exception:
+        except Exception as e:
+            logger.error(
+                f"PAUSE[{attack_id}] ERROR in mem_after: {type(e).__name__} {e}"
+            )
             mem_after = None
 
         logger.info(
@@ -196,8 +211,15 @@ async def pause_attack(attack_id: str):
         }
 
     except Exception as e:
-        logger.error(f"💥 PAUSE[{attack_id}] ERROR type={type(e).__name__} repr={e}")
+        logger.error(
+            "💥 PAUSE[%s] ERROR type=%s repr=%r traceback=%s",
+            attack_id,
+            type(e).__name__,
+            e,
+            traceback.format_exc(),
+        )
         return {"error": f"{type(e).__name__}: {e}"}
+
 
 
 
