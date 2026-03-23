@@ -89,23 +89,39 @@ const [activeBgs, setActiveBgs] = useState([]);  // ✅ Массив атак!
 const [activeMods, setActiveMods] = useState([]);  // ✅ Массив атак!
   
 // ✅ Добавляем новую атаку
-const startAttack = (filename, durationSeconds, attackId, pid) => {
-  const deadLine = Date.now() + durationSeconds * 1000;
-  const initialDuration = durationSeconds * 1000;
+// const startAttack = (filename, durationSeconds, attackId, pid) => {
+//   const deadLine = Date.now() + durationSeconds * 1000;
+//   const initialDuration = durationSeconds * 1000;
   
+//   const newAttack = {
+//     id: attackId,
+//     filename,
+//     pid,
+//     deadLine,
+//     initialDuration,
+//     percent: 0,
+//     status: 'running'  // running | completed
+//   };
+  
+//   console.log('🚀 Запуск атаки:', newAttack);
+//   setActiveAttacks(prev => [...prev, newAttack]);
+// };
+const startAttack = (filename, durationSeconds, attackId, pid) => {
   const newAttack = {
     id: attackId,
     filename,
     pid,
-    deadLine,
-    initialDuration,
-    percent: 0,
-    status: 'running'  // running | completed
+    status: 'running',
+
+    durationTotal: durationSeconds, // в секундах
+    elapsed: 0,
+    lastTickAt: Date.now(),
   };
-  
+
   console.log('🚀 Запуск атаки:', newAttack);
   setActiveAttacks(prev => [...prev, newAttack]);
 };
+
 // ✅ Добавляем новую атаку
 const startBg = (filename, durationSeconds, attackId, pid) => {
   const deadLine = Date.now() + durationSeconds * 1000;
@@ -146,38 +162,34 @@ const startMod = (filename, durationSeconds, attackId, pid) => {
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
   const interval = setInterval(() => {
-    setActiveAttacks(prevAttacks => 
-      prevAttacks.map(attack => {
-        if (attack.status === 'completed' || attack.status === 'stopped' || attack.status === 'paused') {
-          return {
-            ...attack,
-            percent: attack.percent,  // ✅ Замораживаем %!
-            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
-          };
-        }  // ✅ Не трогаем завершённые!
-        // const now = Date.now();
-        // const elapsed = now - (attack.deadLine - attack.initialDuration);
-        // const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        const startTime = attack.deadLine - attack.initialDuration;
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        
-        // ✅ Помечаем завершённые
-        if (progress >= 100) {
-          return {
-            ...attack,
-            percent: 100,
-            status: 'completed'
-          };
+    setActiveAttacks(prev =>
+      prev.map(a => {
+        if (a.status !== 'running' || a.lastTickAt == null) return a;
+
+        const now = Date.now();
+        const deltaSec = (now - a.lastTickAt) / 1000;
+
+        let elapsed = a.elapsed + deltaSec;
+        let status = a.status;
+
+        if (elapsed >= a.durationTotal) {
+          elapsed = a.durationTotal;
+          status = 'completed';
         }
-        
-        return { ...attack, percent: progress };
-      })  // Удаляем завершённые
+
+        return {
+          ...a,
+          elapsed,
+          status,
+          lastTickAt: now,
+        };
+      })
     );
-  }, 100);
-  
+  }, 1000);
+
   return () => clearInterval(interval);
 }, []);
+
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
   const interval = setInterval(() => {
@@ -367,9 +379,16 @@ const clearStoppedMod = () => {
 const pauseAttack = async (attackId) => {
   try {
     await axios.post(`http://127.0.0.1:8000/pause/${attackId}`);
-    setActiveAttacks(prev => prev.map(a => 
-      a.id === attackId ? { ...a, status: 'paused' } : a
-    ));
+    setActiveAttacks(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'paused',
+          lastTickAt: null, // ключевое: перестаём считать дельту
+        };
+      })
+    );
     message.success('⏸️ Атака приостановлена');
   } catch (error) {
     message.error('Ошибка паузы');
@@ -379,9 +398,16 @@ const pauseAttack = async (attackId) => {
 const resumeAttack = async (attackId) => {
   try {
     await axios.post(`http://127.0.0.1:8000/resume/${attackId}`);
-    setActiveAttacks(prev => prev.map(a => 
-      a.id === attackId ? { ...a, status: 'running' } : a
-    ));
+    setActiveAttacks(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'running',
+          lastTickAt: Date.now(), // продолжаем с текущего elapsed
+        };
+      })
+    );
     message.success('▶️ Атака возобновлена');
   } catch (error) {
     message.error('Ошибка возобновления');
