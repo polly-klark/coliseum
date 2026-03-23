@@ -1,4 +1,4 @@
-import os, tempfile, logging, subprocess, psutil, redis, asyncio, signal, traceback
+import os, tempfile, logging, subprocess, psutil, redis, asyncio, signal, traceback, dpkt, time
 from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -39,10 +39,22 @@ async def run_tcpreplay(temp_file_path: str, delay: float, attack_id: str):
     try:
         process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
         pid = process.pid
-        r.set(f'tcpreplay:pid:{attack_id}', pid)     # pid по attack_id
-        r.set(f'tcpreplay:attack:{pid}', attack_id)   # attack_id по pid
-        r.set('file:path', temp_file_path)
+
+        # Прямые связи
+        r.set(f"tcpreplay:pid:{attack_id}", pid)              # pid по attack_id
+        r.set(f"tcpreplay:file:{attack_id}", temp_file_path)  # файл по attack_id
+        r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
+
+        # Обратная связь по pid (если нужно искать по pid)
+        r.set(f"tcpreplay:attack:{pid}", attack_id)           # attack_id по pid
+
+        # НЕ используем глобальный 'file:path'
+        # r.set('file:path', temp_file_path)  # удалить/не использовать
+
         await asyncio.sleep(delay + 1)
+
+    except Exception as e:
+        logger.error(f"run_tcpreplay[{attack_id}] ERROR: {e}")
 
     finally:
         if os.path.exists(temp_file_path):
@@ -54,6 +66,18 @@ def get_pcap_duration(file_path: str) -> float:
     end_time = packets[-1].time
     duration = end_time - start_time
     return duration
+
+def cut_pcap_after_offset(src_path: str, dst_path: str, offset_sec: float):
+    with open(src_path, "rb") as f_in, open(dst_path, "wb") as f_out:
+        reader = dpkt.pcap.Reader(f_in)
+        writer = dpkt.pcap.Writer(f_out)
+
+        t0 = None
+        for ts, buf in reader:
+            if t0 is None:
+                t0 = ts  # время первого пакета в файле
+            if ts - t0 >= offset_sec:
+                writer.writepkt(buf, ts)
 
 @app.get("/hello")
 async def get_hello():
@@ -118,129 +142,93 @@ async def stop(data: dict):  # ✅ Принимаем данные!
     
     return {"message": f"{mes} (attack_id: {attack_id})"}
 
-@app.post("/pause/{attack_id}")
-async def pause_attack(attack_id: str):
-    pid_data = r.get(f"tcpreplay:pid:{attack_id}")
-    if not pid_data:
-        logger.error(f"PAUSE[{attack_id}]: атака не найдена в Redis")
-        return {"error": "Атака не найдена"}
+@app.post("/pause")
+async def pause(data: dict):
+    attack_id = data.get("attack_id")
+    logger.info(f"⏸️ Пауза атаки {attack_id}")
 
-    pid = int(pid_data.decode())
-    logger.info(f"🔍 ДИАГНОСТИКА PID={pid} для {attack_id}")
+    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
+    file_data = r.get(f'tcpreplay:file:{attack_id}')
+    start_data = r.get(f'tcpreplay:start_time:{attack_id}')
+
+    if not pid_data or not file_data or not start_data:
+        logger.error(f"Атака {attack_id} не найдена или не запущена")
+        return {"message": f"Атака {attack_id} не найдена или не запущена"}
+
+    pid = int(pid_data.decode("utf-8"))
+    src_path = file_data.decode("utf-8")
+    start_time = float(start_data.decode("utf-8"))
+
+    now = time.time()
+    elapsed = max(0.0, now - start_time)
+
+    logger.info(
+        f"PAUSE[{attack_id}]: pid={pid}, file={src_path}, elapsed={elapsed:.3f} сек"
+    )
+
+    # 1) Останавливаем текущий tcpreplay
+    try:
+        process = psutil.Process(pid)
+        process.terminate()
+        logger.info(f"PAUSE[{attack_id}]: terminate PID={pid}")
+    except psutil.NoSuchProcess:
+        logger.warning(f"PAUSE[{attack_id}]: процесс {pid} уже не найден")
+
+    # 2) Режем pcap и сохраняем в новый временный файл
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pcap") as tmp:
+        new_path = tmp.name
 
     try:
-        if not psutil.pid_exists(pid):
-            logger.error(f"❌ PID {pid} уже НЕ существует!")
-            return {"error": "Процесс завершён"}
-
-        process = psutil.Process(pid)
-
-        # 1. ДО suspend — максимально безопасно
-        try:
-            status_before = process.status()
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in status_before: {type(e).__name__} {e}"
-            )
-            status_before = "unknown"
-
-        try:
-            cpu_before = process.cpu_percent()
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in cpu_before: {type(e).__name__} {e}"
-            )
-            cpu_before = None
-
-        try:
-            mem_before = process.memory_info().rss / 1024 / 1024
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in mem_before: {type(e).__name__} {e}"
-            )
-            mem_before = None
-
-        logger.info(
-            f"📊 ДО: статус={status_before}, CPU={cpu_before}, память={mem_before} MB"
-        )
-
-        process.suspend()
-        logger.info(f"⏸️ suspend() отправлен PID={pid}")
-
-        await asyncio.sleep(2)
-
-        if not psutil.pid_exists(pid):
-            logger.error(f"💀 PID {pid} УМЕР после suspend!")
-            return {"status": "paused", "process_alive": False}
-
-        process = psutil.Process(pid)
-
-        try:
-            status_after = process.status()
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in status_after: {type(e).__name__} {e}"
-            )
-            status_after = "unknown"
-
-        try:
-            cpu_after = process.cpu_percent()
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in cpu_after: {type(e).__name__} {e}"
-            )
-            cpu_after = None
-
-        try:
-            mem_after = process.memory_info().rss / 1024 / 1024
-        except Exception as e:
-            logger.error(
-                f"PAUSE[{attack_id}] ERROR in mem_after: {type(e).__name__} {e}"
-            )
-            mem_after = None
-
-        logger.info(
-            f"📊 ПОСЛЕ suspend: статус={status_after}, CPU={cpu_after}, память={mem_after} MB"
-        )
-
-        return {
-            "status": "paused",
-            "process_alive": True,
-            "status_before": status_before,
-            "status_after": status_after,
-        }
-
+        cut_pcap_after_offset(src_path, new_path, elapsed)
+        logger.info(f"PAUSE[{attack_id}]: урезанный файл сохранён в {new_path}")
     except Exception as e:
-        logger.error(
-            "💥 PAUSE[%s] ERROR type=%s repr=%r traceback=%s",
-            attack_id,
-            type(e).__name__,
-            e,
-            traceback.format_exc(),
-        )
-        return {"error": f"{type(e).__name__}: {e}"}
+        logger.error(f"PAUSE[{attack_id}]: ошибка при нарезке pcap: {e}")
+        return {"error": f"pcap_cut_failed: {e}"}
 
+    # 3) Старый pcap можно удалить, если он тоже временный
+    try:
+        if os.path.exists(src_path):
+            os.remove(src_path)
+            logger.info(f"PAUSE[{attack_id}]: удалён старый файл {src_path}")
+    except Exception as e:
+        logger.warning(f"PAUSE[{attack_id}]: не удалось удалить {src_path}: {e}")
 
+    # 4) Обновляем Redis: новый файл, убираем pid, start_time сбросим при следующем запуске
+    r.set(f"tcpreplay:file:{attack_id}", new_path)
+    r.delete(f"tcpreplay:pid:{attack_id}")
+    r.delete(f"tcpreplay:attack:{pid}")
+    r.delete(f"tcpreplay:start_time:{attack_id}")
 
+    return {
+        "message": f"Атака {attack_id} поставлена на паузу",
+        "attack_id": attack_id,
+        "elapsed": elapsed,
+        "pcap": new_path,
+    }
 
 @app.post("/resume")
-async def resume(data: dict):
+async def resume(data: dict, background_tasks: BackgroundTasks):
     attack_id = data.get("attack_id")
-    logger.info(f"▶️ ПРОКСИ: возобновление {attack_id}")
-    
-    pid_data = r.get(f'tcpreplay:pid:{attack_id}')
-    if not pid_data:
-        return {"error": f"Атака {attack_id} не найдена"}
-    
-    pid = int(pid_data.decode('utf-8'))
-    try:
-        process = psutil.Process(pid)
-        process.resume()  # ✅ Продолжить!
-        logger.info(f"▶️ {pid} resumed")
-        return {"status": "running"}
-    except Exception as e:
-        logger.error(f"Ошибка возобновления: {e}")
-        return {"error": f"Ошибка возобновления: {e}"}
+    logger.info(f"▶️ Возобновляем атаку {attack_id}")
+
+    file_data = r.get(f"tcpreplay:file:{attack_id}")
+    if not file_data:
+        logger.error(f"Файл для атаки {attack_id} не найден")
+        return {"message": f"Файл для атаки {attack_id} не найден"}
+
+    pcap_path = file_data.decode("utf-8")
+
+    # Можно пересчитать duration, как в receive_file
+    duration = str(get_pcap_duration(pcap_path))
+
+    # Запускаем tcpreplay в фоне
+    background_tasks.add_task(run_tcpreplay, pcap_path, float(duration), attack_id)
+
+    return {
+        "message": f"Атака {attack_id} возобновлена из {pcap_path}",
+        "duration": duration,
+        "attack_id": attack_id,
+    }
 
 @app.get("/status/{attack_id}")
 async def get_status(attack_id: str):
