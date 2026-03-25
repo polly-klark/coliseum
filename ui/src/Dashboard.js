@@ -124,17 +124,15 @@ const startAttack = (filename, durationSeconds, attackId, pid) => {
 
 // ✅ Добавляем новую атаку
 const startBg = (filename, durationSeconds, attackId, pid) => {
-  const deadLine = Date.now() + durationSeconds * 1000;
-  const initialDuration = durationSeconds * 1000;
-  
   const newAttack = {
     id: attackId,
     filename,
     pid,
-    deadLine,
-    initialDuration,
-    percent: 0,
-    status: 'running'  // running | completed
+    status: 'running',
+
+    durationTotal: durationSeconds, // в секундах
+    elapsed: 0,
+    lastTickAt: Date.now(),
   };
   
   console.log('🚀 Запуск атаки:', newAttack);
@@ -142,17 +140,15 @@ const startBg = (filename, durationSeconds, attackId, pid) => {
 };
 // ✅ Добавляем новую атаку
 const startMod = (filename, durationSeconds, attackId, pid) => {
-  const deadLine = Date.now() + durationSeconds * 1000;
-  const initialDuration = durationSeconds * 1000;
-  
   const newAttack = {
     id: attackId,
     filename,
     pid,
-    deadLine,
-    initialDuration,
-    percent: 0,
-    status: 'running'  // running | completed
+    status: 'running',
+
+    durationTotal: durationSeconds, // в секундах
+    elapsed: 0,
+    lastTickAt: Date.now(),
   };
   
   console.log('🚀 Запуск атаки:', newAttack);
@@ -206,71 +202,83 @@ useEffect(() => {
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
   const interval = setInterval(() => {
-    setActiveBgs(prevAttacks => 
-      prevAttacks.map(attack => {
-        if (attack.status === 'completed' || attack.status === 'stopped') {
-          return {
-            ...attack,
-            percent: attack.percent,  // ✅ Замораживаем %!
-            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
-          };
-        }  // ✅ Не трогаем завершённые!
-        // const now = Date.now();
-        // const elapsed = now - (attack.deadLine - attack.initialDuration);
-        // const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        const startTime = attack.deadLine - attack.initialDuration;
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        
-        // ✅ Помечаем завершённые
-        if (progress >= 100) {
-          return {
-            ...attack,
-            percent: 100,
-            status: 'completed'
-          };
+    setActiveBgs(prev =>
+      prev.map(a => {
+        if (
+          a.status === 'completed' ||
+          a.status === 'stopped' ||
+          a.status === 'paused' ||
+          a.lastTickAt == null
+        ) {
+          return a;
         }
-        
-        return { ...attack, percent: progress };
-      })  // Удаляем завершённые
+
+        const now = Date.now();
+        const deltaSec = (now - a.lastTickAt) / 1000;
+
+        let elapsed = a.elapsed + deltaSec;
+        let status = a.status;
+
+        if (elapsed >= a.durationTotal) {
+          elapsed = a.durationTotal;
+          status = 'completed';
+        }
+
+        const rawPercent = (elapsed / a.durationTotal) * 100;
+        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+
+        return {
+          ...a,
+          elapsed,
+          status,
+          lastTickAt: now,
+          percent,
+        };
+      })
     );
-  }, 100);
-  
+  }, 100); // тикаем раз в 100 мс для плавного роста
+
   return () => clearInterval(interval);
 }, []);
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
   const interval = setInterval(() => {
-    setActiveMods(prevAttacks => 
-      prevAttacks.map(attack => {
-        if (attack.status === 'completed' || attack.status === 'stopped') {
-          return {
-            ...attack,
-            percent: attack.percent,  // ✅ Замораживаем %!
-            deadLine: attack.deadLine || Date.now()  // ✅ Сбрасываем таймер
-          };
-        }  // ✅ Не трогаем завершённые!
-        // const now = Date.now();
-        // const elapsed = now - (attack.deadLine - attack.initialDuration);
-        // const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        const startTime = attack.deadLine - attack.initialDuration;
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(Math.floor((elapsed / attack.initialDuration) * 100), 100);
-        
-        // ✅ Помечаем завершённые
-        if (progress >= 100) {
-          return {
-            ...attack,
-            percent: 100,
-            status: 'completed'
-          };
+    setActiveMods(prev =>
+      prev.map(a => {
+        if (
+          a.status === 'completed' ||
+          a.status === 'stopped' ||
+          a.status === 'paused' ||
+          a.lastTickAt == null
+        ) {
+          return a;
         }
-        
-        return { ...attack, percent: progress };
-      })  // Удаляем завершённые
+
+        const now = Date.now();
+        const deltaSec = (now - a.lastTickAt) / 1000;
+
+        let elapsed = a.elapsed + deltaSec;
+        let status = a.status;
+
+        if (elapsed >= a.durationTotal) {
+          elapsed = a.durationTotal;
+          status = 'completed';
+        }
+
+        const rawPercent = (elapsed / a.durationTotal) * 100;
+        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+
+        return {
+          ...a,
+          elapsed,
+          status,
+          lastTickAt: now,
+          percent,
+        };
+      })
     );
-  }, 100);
-  
+  }, 100); // тикаем раз в 100 мс для плавного роста
+
   return () => clearInterval(interval);
 }, []);
 
@@ -427,6 +435,82 @@ const resumeAttack = async (attackId) => {
   }
 };
 
+const pauseBg = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/pause/${attackId}`);
+    setActiveBgs(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'paused',
+          lastTickAt: null, // ключевое: перестаём считать дельту
+        };
+      })
+    );
+    message.success('⏸️ Атака приостановлена');
+  } catch (error) {
+    message.error('Ошибка паузы');
+  }
+};
+
+const resumeBg = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/resume/${attackId}`);
+    setActiveBgs(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'running',
+          lastTickAt: Date.now(), // продолжаем с текущего elapsed
+        };
+      })
+    );
+    message.success('▶️ Атака возобновлена');
+  } catch (error) {
+    message.error('Ошибка возобновления');
+  }
+};
+
+const pauseMod = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/pause/${attackId}`);
+    setActiveMods(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'paused',
+          lastTickAt: null, // ключевое: перестаём считать дельту
+        };
+      })
+    );
+    message.success('⏸️ Атака приостановлена');
+  } catch (error) {
+    message.error('Ошибка паузы');
+  }
+};
+
+const resumeMod = async (attackId) => {
+  try {
+    await axios.post(`http://127.0.0.1:8000/resume/${attackId}`);
+    setActiveMods(prev =>
+      prev.map(a => {
+        if (a.id !== attackId) return a;
+        return {
+          ...a,
+          status: 'running',
+          lastTickAt: Date.now(), // продолжаем с текущего elapsed
+        };
+      })
+    );
+    message.success('▶️ Атака возобновлена');
+  } catch (error) {
+    message.error('Ошибка возобновления');
+  }
+};
+
 const getAttackStatus = async (attackId) => {
   const resp = await axios.get(`http://127.0.0.1:8000/status/${attackId}`);
   return resp.data;
@@ -466,6 +550,8 @@ const getAttackStatus = async (attackId) => {
       stopMod,
       clearCompletedMod, clearStoppedMod,
       pauseAttack, resumeAttack, getAttackStatus,
+      pauseBg, resumeBg,
+      pauseMod, resumeMod,
     }}>
       {children}
     </PlayContext.Provider>
@@ -519,6 +605,8 @@ const Dashboard = ({ token }) => {
     stopMod,
     clearCompletedMod, clearStoppedMod,
     pauseAttack, resumeAttack, getAttackStatus,
+    pauseBg, resumeBg,
+    pauseMod, resumeMod,
   } = usePlay();
   const [user, setUser] = useState(null);
   const [data, setData] = useState([]);
@@ -700,19 +788,57 @@ const Dashboard = ({ token }) => {
               <div key={attack.id} className={`attack-card ${attack.status}`}>
                 <div className="attack-header">
                   <span>📁 {attack.filename}</span>
-                  {attack.status === 'running' ? (
-                    <Button 
-                      danger 
-                      size="small" 
-                      onClick={() => stopMod(attack.id)}
-                    >
-                      🛑 Остановить
-                    </Button>
-                  ) : attack.status === 'stopped' ? (
-                      <Tag color="default">Остановлена</Tag>
-                  ) : (
-                    <Tag color="success">✅ Завершено</Tag>
+                  {attack.status === 'running' && (
+                    <div>
+                      <Button size="small" onClick={() => pauseMod(attack.id)}>
+                        ⏸️ Пауза
+                      </Button>
+                      <Button danger size="small" onClick={() => stopMod(attack.id)}>
+                        🛑 Остановить
+                      </Button>
+                      {/* <Button
+                        size="small"
+                        onClick={async () => {
+                          try {
+                            const data = await getAttackStatus(attack.id);
+                            console.log("STATUS:", data);
+                            // при желании можно показать message:
+                            // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                          } catch (e) {
+                            console.error(e);
+                            message.error("Не удалось получить статус");
+                          }
+                        }}
+                      >
+                        🔍 Статус
+                      </Button> */}
+                    </div>
                   )}
+                  {attack.status === 'paused' && (
+                    <div>
+                      <Button type="primary" size="small" onClick={() => resumeMod(attack.id)}>
+                      ▶️ Продолжить
+                    </Button>
+                    {/* <Button
+                      size="small"
+                      onClick={async () => {
+                        try {
+                          const data = await getAttackStatus(attack.id);
+                          console.log("STATUS:", data);
+                          // при желании можно показать message:
+                          // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                        } catch (e) {
+                          console.error(e);
+                          message.error("Не удалось получить статус");
+                        }
+                      }}
+                    >
+                      🔍 Статус
+                    </Button> */}
+                    </div>
+                  )}
+                  {attack.status === 'stopped' && <Tag color="error">🛑 Остановлена</Tag>}
+                  {attack.status === 'completed' && <Tag color="success">✅ Завершено</Tag>}
                 </div>
                 
                 <div className="attack-progress">
@@ -725,7 +851,7 @@ const Dashboard = ({ token }) => {
                 
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={attack.deadLine} 
+                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
@@ -1004,19 +1130,57 @@ const Dashboard = ({ token }) => {
               <div key={attack.id} className={`attack-card ${attack.status}`}>
                 <div className="attack-header">
                   <span>📁 {attack.filename}</span>
-                  {attack.status === 'running' ? (
-                    <Button 
-                      danger 
-                      size="small" 
-                      onClick={() => stopBg(attack.id)}
-                    >
-                      🛑 Остановить
-                    </Button>
-                  ) : attack.status === 'stopped' ? (
-                      <Tag color="error">Остановлена</Tag>
-                  ) : (
-                    <Tag color="success">✅ Завершено</Tag>
+                  {attack.status === 'running' && (
+                    <div>
+                      <Button size="small" onClick={() => pauseAttack(attack.id)}>
+                        ⏸️ Пауза
+                      </Button>
+                      <Button danger size="small" onClick={() => stopAttack(attack.id)}>
+                        🛑 Остановить
+                      </Button>
+                      {/* <Button
+                        size="small"
+                        onClick={async () => {
+                          try {
+                            const data = await getAttackStatus(attack.id);
+                            console.log("STATUS:", data);
+                            // при желании можно показать message:
+                            // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                          } catch (e) {
+                            console.error(e);
+                            message.error("Не удалось получить статус");
+                          }
+                        }}
+                      >
+                        🔍 Статус
+                      </Button> */}
+                    </div>
                   )}
+                  {attack.status === 'paused' && (
+                    <div>
+                      <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
+                      ▶️ Продолжить
+                    </Button>
+                    {/* <Button
+                      size="small"
+                      onClick={async () => {
+                        try {
+                          const data = await getAttackStatus(attack.id);
+                          console.log("STATUS:", data);
+                          // при желании можно показать message:
+                          // message.info(`PID ${data.pid}, alive=${data.alive}, status=${data.status}`);
+                        } catch (e) {
+                          console.error(e);
+                          message.error("Не удалось получить статус");
+                        }
+                      }}
+                    >
+                      🔍 Статус
+                    </Button> */}
+                    </div>
+                  )}
+                  {attack.status === 'stopped' && <Tag color="error">🛑 Остановлена</Tag>}
+                  {attack.status === 'completed' && <Tag color="success">✅ Завершено</Tag>}
                 </div>
                 
                 <div className="attack-progress">
