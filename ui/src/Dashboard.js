@@ -765,9 +765,9 @@ const Dashboard = ({ token }) => {
           >
             <div className="centered">
               <p>У вас пока нет запущенных атак.</p>
-              <p>Хотите запустить атаку?</p>
+              {/* <p>Хотите запустить атаку?</p> */}
             </div>
-            <div className="centered">
+            {/* <div className="centered">
               <Button
                 color="danger"
                 variant="solid"
@@ -777,7 +777,7 @@ const Dashboard = ({ token }) => {
               >
                 Да!
               </Button>
-            </div>
+            </div> */}
           </Space>
         </div>
       )}
@@ -882,7 +882,7 @@ const Dashboard = ({ token }) => {
                 </div>
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={attack.deadLine} 
+                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
@@ -935,9 +935,9 @@ const Dashboard = ({ token }) => {
           >
             <div className="centered">
               <p>У вас пока нет запущенных шаблонов атак.</p>
-              <p>Хотите запустить шаблон атаки?</p>
+              {/* <p>Хотите запустить шаблон атаки?</p> */}
             </div>
-            <div className="centered">
+            {/* <div className="centered">
               <Button
                 color="purple"
                 variant="solid"
@@ -947,7 +947,7 @@ const Dashboard = ({ token }) => {
               >
                 Да!
               </Button>
-            </div>
+            </div> */}
           </Space>
         </div>
       )}
@@ -1069,9 +1069,9 @@ const Dashboard = ({ token }) => {
           >
             <div className="centered">
               <p>У вас пока нет запущенного фонового трафика.</p>
-              <p>Хотите запустить фоновый трафик?</p>
+              {/* <p>Хотите запустить фоновый трафик?</p> */}
             </div>
-            <div className="centered">
+            {/* <div className="centered">
               <Button
                 color="primary"
                 variant="solid"
@@ -1081,7 +1081,7 @@ const Dashboard = ({ token }) => {
               >
                 Да!
               </Button>
-            </div>
+            </div> */}
           </Space>
         </div>
       )}
