@@ -829,7 +829,7 @@ const Dashboard = ({ token }) => {
                       <Button danger size="small" onClick={() => stopAttack(attack.id)}>
                         🛑 Остановить
                       </Button>
-                      <Button
+                      {/* <Button
                         size="small"
                         onClick={async () => {
                           try {
@@ -844,7 +844,7 @@ const Dashboard = ({ token }) => {
                         }}
                       >
                         🔍 Статус
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                   {attack.status === 'paused' && (
@@ -852,7 +852,7 @@ const Dashboard = ({ token }) => {
                       <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
                       ▶️ Продолжить
                     </Button>
-                    <Button
+                    {/* <Button
                       size="small"
                       onClick={async () => {
                         try {
@@ -867,7 +867,7 @@ const Dashboard = ({ token }) => {
                       }}
                     >
                       🔍 Статус
-                    </Button>
+                    </Button> */}
                     </div>
                   )}
                   {attack.status === 'stopped' && <Tag color="error">🛑 Остановлена</Tag>}
@@ -1194,10 +1194,10 @@ const Dashboard = ({ token }) => {
             <p className="ant-upload-text">
               Нажмите или перетащите в эту область файл для загрузки
             </p>
-            <p className="ant-upload-hint">
+            {/* <p className="ant-upload-hint">
               Поддерживает загрузку по одному файлу. Строго запрещено 
               загружать файлы в формате, отличном от .pcapng
-            </p>
+            </p> */}
           </Dragger>
         </div>
       </Modal>
