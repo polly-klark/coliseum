@@ -1132,10 +1132,10 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      <Button size="small" onClick={() => pauseAttack(attack.id)}>
+                      <Button size="small" onClick={() => pauseBg(attack.id)}>
                         ⏸️ Пауза
                       </Button>
-                      <Button danger size="small" onClick={() => stopAttack(attack.id)}>
+                      <Button danger size="small" onClick={() => stopBg(attack.id)}>
                         🛑 Остановить
                       </Button>
                       {/* <Button
@@ -1158,7 +1158,7 @@ const Dashboard = ({ token }) => {
                   )}
                   {attack.status === 'paused' && (
                     <div>
-                      <Button type="primary" size="small" onClick={() => resumeAttack(attack.id)}>
+                      <Button type="primary" size="small" onClick={() => resumeBg(attack.id)}>
                       ▶️ Продолжить
                     </Button>
                     {/* <Button
@@ -1193,7 +1193,7 @@ const Dashboard = ({ token }) => {
                 
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={attack.deadLine} 
+                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
