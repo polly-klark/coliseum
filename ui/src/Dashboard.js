@@ -164,7 +164,14 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prev =>
       prev.map(a => {
-        if (a.status !== 'running' || a.lastTickAt == null) return a;
+        if (
+          a.status === 'completed' ||
+          a.status === 'stopped' ||
+          a.status === 'paused' ||
+          a.lastTickAt == null
+        ) {
+          return a;
+        }
 
         const now = Date.now();
         const deltaSec = (now - a.lastTickAt) / 1000;
@@ -177,18 +184,24 @@ useEffect(() => {
           status = 'completed';
         }
 
+        const rawPercent = (elapsed / a.durationTotal) * 100;
+        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+
         return {
           ...a,
           elapsed,
           status,
           lastTickAt: now,
+          percent,
         };
       })
     );
-  }, 1000);
+  }, 100); // тикаем раз в 100 мс для плавного роста
 
   return () => clearInterval(interval);
 }, []);
+
+
 
 // ✅ Синхронизируем прогресс ВСЕХ атак
 useEffect(() => {
