@@ -612,7 +612,8 @@ const Dashboard = ({ token }) => {
   const [data, setData] = useState([]);
   const [header, setHeader] = useState("Нажмите на кнопку!");
   const [activeTable, setActiveTable] = useState(null); // Состояние для активной таблицы
-  const [open, setOpen] = useState(false);
+  const [openUpload, setOpenUpload] = useState(false);
+  const [openPlay, setOpenPlay] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
 
@@ -672,7 +673,7 @@ const Dashboard = ({ token }) => {
     console.log(dir)
     setTimeout( async () => {
       await fetchData(dir);
-      setOpen(false);
+      setOpenUpload(false);
     }, 1000);
   };
   const props = {
@@ -689,11 +690,17 @@ const Dashboard = ({ token }) => {
     fileList,
   };
   const handleUploadModal = () => {
-    setOpen(true);
+    setOpenUpload(true);
   };
-  const handleCancel = async (dir) => {
-    setOpen(false);
+  const handlePlayModal = () => {
+    setOpenPlay(true);
+  };
+  const handleCancelUpload = async (dir) => {
+    setOpenUpload(false);
     await fetchData(dir);
+  };
+  const handleCancelPlay = async (dir) => {
+    setOpenPlay(false);
   };
 
   const fetchData = async (dir) => {
@@ -1340,9 +1347,9 @@ const Dashboard = ({ token }) => {
           </div>
         )}
       <Modal
-        open={open}
+        open={openUpload}
         title={"Загрузка в " + header}
-        onCancel={() => handleCancel(activeTable)}
+        onCancel={() => handleCancelUpload(activeTable)}
         footer={
           // <Button
           //   key="back"
