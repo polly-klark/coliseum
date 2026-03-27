@@ -584,7 +584,14 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       );
   
       const parsedData = JSON.parse(response.data);
-      startAttack(filename, parseFloat(parsedData.duration), attackId, parsedData.pid || 0);
+      startAttack(
+        filename, 
+        parseFloat(parsedData.duration), 
+        attackId, 
+        parsedData.pid || 0,
+        selectedMode,           // ✅ 5-й аргумент
+        modeParams              // ✅ 6-й аргумент
+      );
   
       message.success(`Файл "${filename}" запущен в режиме ${selectedMode}`);
     } catch (error) {

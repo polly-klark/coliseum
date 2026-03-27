@@ -172,19 +172,28 @@ const [activeMods, setActiveMods] = useState([]);  // ✅ Массив атак!
 //   console.log('🚀 Запуск атаки:', newAttack);
 //   setActiveAttacks(prev => [...prev, newAttack]);
 // };
-const startAttack = (filename, durationSeconds, attackId, pid) => {
+const startAttack = (filename, durationSeconds, attackId, pid, mode, modeParams) => {
+  const effectiveDuration = durationSeconds / (modeParams.multiplier || 1);
+  
   const newAttack = {
     id: attackId,
     filename,
     pid,
     status: 'running',
-    durationTotal: durationSeconds,
+    durationTotal: durationSeconds,        // базовая длительность
     elapsed: 0,
     lastTickAt: Date.now(),
+    effectiveDuration,                     // скорректированная
+    mode,
+    modeParams,
+    loopCurrent: 0,
+    loopTotal: modeParams.loop_count || 1,
+    percent: 0,
   };
 
   setActiveAttacks(prev => [...prev, newAttack]);
 };
+
 
 
 // ✅ Добавляем новую атаку
@@ -225,42 +234,47 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prev =>
       prev.map(a => {
-        if (
-          a.status === 'completed' ||
-          a.status === 'stopped' ||
-          a.status === 'paused' ||
-          a.lastTickAt == null
-        ) {
-          return a;
-        }
+        if (a.lastTickAt == null) return a;
 
         const now = Date.now();
         const deltaSec = (now - a.lastTickAt) / 1000;
-
         let elapsed = a.elapsed + deltaSec;
+        
+        const effectiveDuration = a.durationTotal / (a.modeParams?.multiplier || 1);
         let status = a.status;
+        let loopCurrent = a.loopCurrent;
 
-        if (elapsed >= a.durationTotal) {
-          elapsed = a.durationTotal;
-          status = 'completed';
+        if (elapsed >= effectiveDuration) {
+          elapsed = 0;
+          loopCurrent += 1;
+          
+          if (loopCurrent >= a.loopTotal) {
+            status = 'completed';
+            elapsed = effectiveDuration; // ✅ 100% в конце
+          }
         }
 
-        const rawPercent = (elapsed / a.durationTotal) * 100;
-        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+        // ✅ ВСЕГДА считаем percent
+        const percent = Math.min(100, Math.floor((elapsed / effectiveDuration) * 100));
 
+        // ✅ Обновляем ВСЕГДА
         return {
           ...a,
           elapsed,
           status,
           lastTickAt: now,
+          loopCurrent,
+          effectiveDuration,
           percent,
         };
       })
     );
-  }, 100); // тикаем раз в 100 мс для плавного роста
+  }, 100);
 
   return () => clearInterval(interval);
 }, []);
+
+
 
 
 
