@@ -618,7 +618,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   
     try {
       const response = await axios.post(
-        `http://127.0.0.1:8000/play/${filename}`,
+        `http://127.0.0.1:8000/play_attack/${filename}`,
         { 
           attack_id: attackId,
           mode: selectedMode,

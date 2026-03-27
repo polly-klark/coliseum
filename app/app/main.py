@@ -587,6 +587,8 @@ async def send_file(filename: str, request: Request):
     body = await request.body()
     frontend_data = json.loads(body) if body else {}
     attack_id = frontend_data.get("attack_id", "unknown")
+    mode = frontend_data.get("mode", "standart")      # режим
+    mode_params = frontend_data.get("mode_params", {}) # параметры режима
     logger.info(f"Передаю файл {filename} для запуска")
     # Открываем поток для чтения файла из GridFS по имени
     try:
@@ -603,7 +605,9 @@ async def send_file(filename: str, request: Request):
         
         headers = {
             "filename": filename,
-            "attack-id": attack_id  # ✅ Главное добавление!
+            "attack-id": attack_id,  # ✅ Главное добавление!
+            "mode": mode,                    # ✅ передаём режим
+            "mode-params": json.dumps(mode_params) # ✅ параметры
         }
         
         logger.info(f"Подключаюсь к прокси: http://{IP_ADDDRES_FOR_PROXY}:9000/receive_file, attack_id: {attack_id}")
