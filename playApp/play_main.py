@@ -35,30 +35,59 @@ app.add_middleware(
 logging.basicConfig(filename='playApp.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def run_tcpreplay(temp_file_path: str, delay: float, attack_id: str):
+def build_tcpreplay_command(pcap_path, mode, params):
+    base_cmd = ['sudo', 'tcpreplay', '-i', 'ens33']
+    
+    if mode == 'loop':
+        base_cmd.extend(['--loop', str(params.get('loop_count', 1))])
+    elif mode == 'topspeed':
+        base_cmd.append('--topspeed')
+    elif mode == 'mltiplier':
+        base_cmd.extend(['--multiplier', str(params.get('multiplier', 1.0))])
+    elif mode == 'pps':
+        base_cmd.extend(['--pps', str(params.get('pps', 100))])
+    # standart — без доп. параметров
+    
+    base_cmd.append(pcap_path)
+    return base_cmd
+
+
+async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
+    """
+    Запускает tcpreplay с произвольной командой.
+    
+    cmd: ['sudo', 'tcpreplay', '-i', 'ens33', '--pps', '200', 'file.pcap']
+    """
     try:
-        process = subprocess.Popen(['sudo', 'tcpreplay', '-i', 'ens33', temp_file_path])
+        logger.info(f"🚀 [{attack_id}] Запуск: {' '.join(cmd)}")
+        
+        process = subprocess.Popen(cmd)
         pid = process.pid
 
         # Прямые связи
-        r.set(f"tcpreplay:pid:{attack_id}", pid)              # pid по attack_id
-        r.set(f"tcpreplay:file:{attack_id}", temp_file_path)  # файл по attack_id
+        r.set(f"tcpreplay:pid:{attack_id}", pid)
+        r.set(f"tcpreplay:file:{attack_id}", cmd[-1])  # последний аргумент — путь к pcap
         r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
+        r.set(f"tcpreplay:cmd:{attack_id}", json.dumps(cmd))  # сохраняем команду для логов/отладки
 
-        # Обратная связь по pid (если нужно искать по pid)
-        r.set(f"tcpreplay:attack:{pid}", attack_id)           # attack_id по pid
-
-        # НЕ используем глобальный 'file:path'
-        # r.set('file:path', temp_file_path)  # удалить/не использовать
+        # Обратная связь по pid
+        r.set(f"tcpreplay:attack:{pid}", attack_id)
 
         await asyncio.sleep(delay + 1)
 
     except Exception as e:
         logger.error(f"run_tcpreplay[{attack_id}] ERROR: {e}")
-
+    
     finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
+        # Удаляем файл только если он временный (не трогаем исходные)
+        pcap_path = cmd[-1] if cmd else None
+        if pcap_path and os.path.exists(pcap_path):
+            try:
+                os.remove(pcap_path)
+                logger.info(f"[{attack_id}] Удалён временный файл {pcap_path}")
+            except Exception as e:
+                logger.warning(f"[{attack_id}] Не удалось удалить {pcap_path}: {e}")
+
 
 def get_pcap_duration(file_path: str) -> float:
     packets = rdpcap(file_path)
@@ -87,7 +116,9 @@ async def get_hello():
 async def receive_file(request: Request, background_tasks: BackgroundTasks):
     # ✅ Получаем attack_id из HEADERS (от main сервера)
     attack_id = request.headers.get("attack-id")
-    logger.info(f"📥 ПРОКСИ: файл для атаки '{attack_id}'")  # ← Теперь НЕ None!
+    mode = request.headers.get("mode", "standart")
+    mode_params = json.loads(request.headers.get("mode-params", "{}"))
+    logger.info(f"📥 ПРОКСИ: файл для '{attack_id}', mode={mode}")  # ← Теперь НЕ None!
     # Создаем временный файл для сохранения содержимого
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         try:
@@ -102,15 +133,15 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
             raise HTTPException(status_code=500, detail="Internal Server Error")
     filename = request.headers.get("filename")
     logger.info(f"Получаю файл {filename} для запуска")
-    
+    cmd = build_tcpreplay_command(temp_file_path, mode, mode_params)
     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
     duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
-    background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration), attack_id)
+    background_tasks.add_task(run_tcpreplay_cmd, cmd, float(duration), attack_id)
 
     # Возвращаем длительность проигрывания вместе с сообщением
-    return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id}
+    return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id, "mode": mode}
 
 @app.post("/stop")
 async def stop(data: dict):  # ✅ Принимаем данные!

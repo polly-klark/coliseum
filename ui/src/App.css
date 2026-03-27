@@ -219,3 +219,22 @@
 .green-hover-btn:hover {
   color: #52c41a !important;
 }
+
+/* Фон активной кнопки */
+/* .custom-button-radio-attack .ant-radio-button-wrapper-checked {
+  background-color: #52c41a !important;
+  border-color: #52c41a !important;
+  color: white !important;
+} */
+
+/* Ховер активной кнопки */
+/* .custom-button-radio-attack .ant-radio-button-wrapper-checked:hover {
+  background-color: #52c41a !important;
+  color: white !important;
+} */
+
+/* Ховер неактивной */
+/* .custom-button-radio-attack .ant-radio-button-wrapper:hover {
+  border-color: #52c41a !important;
+  color: #46a417 !important;
+} */

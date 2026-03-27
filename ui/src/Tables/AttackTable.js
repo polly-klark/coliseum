@@ -14,6 +14,8 @@ import {
   Radio,
   Divider,
   notification,
+  Typography,
+  InputNumber,
 } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
@@ -52,6 +54,59 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   const [selectedFilename, setSelectedFilename] = React.useState("");
   const [newFilename, setNewFilename] = React.useState(selectedFilename);
   const [valueRadio, setValueRadio] = React.useState();
+  const [selectedMode, setSelectedMode] = React.useState('standart');
+  const [loopCount, setLoopCount] = React.useState(5);
+  const [multiplier, setMultiplier] = React.useState(2.0);
+  const [ppsValue, setPpsValue] = React.useState(200);
+
+  // В renderModeOptions:
+  const renderModeOptions = () => {
+    switch (selectedMode) {
+      case 'loop':
+        return (
+          <div>
+            <p>Количество повторений:</p>
+            <InputNumber 
+              min={1} max={100} 
+              value={loopCount} 
+              onChange={setLoopCount}
+            />
+          </div>
+        );
+      case 'mltiplier':
+        return (
+          <div>
+            <p>Множитель скорости:</p>
+            <InputNumber 
+              min={0.1} max={10} step={0.1} 
+              value={multiplier} 
+              onChange={setMultiplier}
+            />
+          </div>
+        );
+      case 'pps':
+        return (
+          <div>
+            <p>Пакетов в секунду:</p>
+            <InputNumber 
+              min={1} max={10000} 
+              value={ppsValue} 
+              onChange={setPpsValue}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const options = [
+    { label: 'Обычный', value: 'standart' },
+    { label: 'Зациклить', value: 'loop' },
+    { label: 'Максимальная скорость', value: 'topspeed' },
+    { label: 'Умножить скорость', value: 'mltiplier' },
+    { label: 'Скорость вручную', value: 'pps' },
+  ];
   const onChangeRadio = e => {
     setValueRadio(e.target.value);
   };
@@ -528,37 +583,65 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     },
   ];
   const handlePlayModal = async (filename, event) => {
+    event.preventDefault();
     setOpenPlay(true);
     setSelectedFilename(filename);
   };
   const handleCancelPlay = () => {
     setOpenPlay(false);
     setSelectedFilename("");
+    setSelectedMode('standart');
+    setLoopCount(5);      // ✅ сброс
+    setMultiplier(2.0);   // ✅ сброс
+    setPpsValue(200);     // ✅ сброс
   };
+  
   const handlePlay = async (filename, event) => {
-    event.preventDefault(); // Предотвращаем переход по ссылке
-    console.log(`Проигрывается файл ${filename}`);
-    setStopFilenameAttack(filename);
-    const attackId = Date.now() + Math.random().toString(36);  // ✅ Генерим ID
+    event.preventDefault();
+    console.log(`Проигрывается файл ${filename} в режиме ${selectedMode}`);
+  
+    const attackId = Date.now() + Math.random().toString(36);
+    const modeParams = {};
+  
+    // ✅ Берём значения из состояния инпутов
+    switch (selectedMode) {
+      case 'loop':
+        modeParams.loop_count = loopCount;
+        break;
+      case 'mltiplier':
+        modeParams.multiplier = multiplier;
+        break;
+      case 'pps':
+        modeParams.pps = ppsValue;
+        break;
+    }
+  
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/play_attack/${filename}`, { attack_id: attackId }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.post(
+        `http://127.0.0.1:8000/play/${filename}`,
+        { 
+          attack_id: attackId,
+          mode: selectedMode,
+          mode_params: modeParams
         },
-      });
-      const { pid, attack_id } = response.data;  // ✅ Получаем обратно
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
       const parsedData = JSON.parse(response.data);
-      startAttack(filename, parseFloat(parsedData.duration), attackId, pid);
-      const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
-      setDeadLineAttack(duration);
-      setRemainingTimeAttack(parsedData.duration * 1000);
-      initialRemainingTimeRefAttack.current = parsedData.duration * 1000
-      message.success(`Файл "${filename}" успешно передан на запуск`);
+      startAttack(filename, parseFloat(parsedData.duration), attackId, parsedData.pid || 0);
+  
+      message.success(`Файл "${filename}" запущен в режиме ${selectedMode}`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
-      message.error(`Ошибка при передаче файла "${filename}"`);
+      message.error(`Ошибка при запуске "${filename}"`);
     }
   };
+  
+  
 
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -783,7 +866,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         open={openPlay}
         title={"Запуск " + selectedFilename}
         onCancel={handleCancelPlay}
-        width={700}
+        width={600}
         footer={[
           <Button
             key="back"
@@ -799,15 +882,31 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             variant="solid"
             onClick={(event) => handlePlay(selectedFilename, event)}
           >
-            Модифицировать
+            Запустить
           </Button>,
         ]}
       >
-        <Tabs
-          activeKey={keyOfTab}   // управляемая активная вкладка
-          onChange={(key) => setKeyOfTab(key)}  // обновление состояния при переключении
-          items={itemsOfTabs}
+        <Typography.Title level={3} style={{ 
+          textAlign: "center", 
+          margin: "30px 0",
+          color: "#000000"
+        }}>
+          Выберите режим проигрывания трафика
+        </Typography.Title>
+        <Radio.Group
+          options={options}
+          value={selectedMode}  // ✅ контролируемое значение
+          onChange={(e) => setSelectedMode(e.target.value)} // ✅ получаем выбор
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '8px' 
+          }}
         />
+        <Divider />
+        <div style={{ marginTop: '20px' }}>
+          {renderModeOptions()}
+        </div>
       </Modal>
     </>
   );

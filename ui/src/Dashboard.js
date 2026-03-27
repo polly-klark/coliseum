@@ -112,15 +112,14 @@ const startAttack = (filename, durationSeconds, attackId, pid) => {
     filename,
     pid,
     status: 'running',
-
-    durationTotal: durationSeconds, // в секундах
+    durationTotal: durationSeconds,
     elapsed: 0,
     lastTickAt: Date.now(),
   };
 
-  console.log('🚀 Запуск атаки:', newAttack);
   setActiveAttacks(prev => [...prev, newAttack]);
 };
+
 
 // ✅ Добавляем новую атаку
 const startBg = (filename, durationSeconds, attackId, pid) => {
