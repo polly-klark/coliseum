@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useRef } from "react";
 import axios from "axios";
-import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag, InputNumber } from "antd";
+import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag, InputNumber, Alert, } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import "./App.css"; // Импорт вашего CSS файла
@@ -94,11 +94,19 @@ const renderModeOptions = () => {
       return (
         <div>
           <p>Множитель скорости:</p>
-          <InputNumber 
-            min={0.1} max={10} step={0.1} 
-            value={multiplier} 
-            onChange={setMultiplier}
-          />
+          <Flex gap="middle" vertical>
+            <InputNumber 
+              min={0.1} max={10} step={0.1} 
+              value={multiplier} 
+              onChange={setMultiplier}
+            />
+            <Alert 
+              type="info" 
+              showIcon 
+              message="Примечание:"
+              description="2.0 — в 2 раза быстрее, 0.5 — в 2 раза медленнее"
+            />
+          </Flex>
         </div>
       );
     case 'pps':
