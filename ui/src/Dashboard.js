@@ -949,7 +949,7 @@ const Dashboard = ({ token }) => {
             <Button 
               onClick={clearCompletedMod} 
               type="dashed"
-              style={{ marginTop: '10px' }}
+              className="green-hover-btn"
             >
               🗑️ Очистить завершённые (
               {activeMods.filter(a => a.status === 'completed').length}
@@ -1119,7 +1119,7 @@ const Dashboard = ({ token }) => {
             <Button 
               onClick={clearCompletedAttack} 
               type="dashed"
-              style={{ marginTop: '10px' }}
+              className="green-hover-btn"
             >
               🗑️ Очистить завершённые (
               {activeAttacks.filter(a => a.status === 'completed').length}
