@@ -42,6 +42,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     stopAttack, 
   } = usePlay();
   const [open, setOpen] = React.useState(false);
+  const [openPlay, setOpenPlay] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
   const [MACBox, setMACBox] = React.useState(false);
@@ -526,7 +527,14 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </>
     },
   ];
-
+  const handlePlayModal = async (filename, event) => {
+    setOpenPlay(true);
+    setSelectedFilename(filename);
+  };
+  const handleCancelPlay = () => {
+    setOpenPlay(false);
+    setSelectedFilename("");
+  };
   const handlePlay = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
     console.log(`Проигрывается файл ${filename}`);
@@ -710,7 +718,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             <Space size="middle">
               <a
                 href="#"
-                onClick={(event) => handlePlay(record.filename, event)}
+                onClick={(event) => handlePlayModal(record.filename, event)}
               >
                 Запустить
               </a>
@@ -760,6 +768,36 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             color="pink"
             variant="solid"
             onClick={() => getActiveRows(selectedFilename)}
+          >
+            Модифицировать
+          </Button>,
+        ]}
+      >
+        <Tabs
+          activeKey={keyOfTab}   // управляемая активная вкладка
+          onChange={(key) => setKeyOfTab(key)}  // обновление состояния при переключении
+          items={itemsOfTabs}
+        />
+      </Modal>
+      <Modal
+        open={openPlay}
+        title={"Запуск " + selectedFilename}
+        onCancel={handleCancelPlay}
+        width={700}
+        footer={[
+          <Button
+            key="back"
+            color="cyan"
+            variant="outlined"
+            onClick={handleCancelPlay}
+          >
+            Отмена
+          </Button>,
+          <Button
+            key="submit"
+            color="pink"
+            variant="solid"
+            onClick={(event) => handlePlay(selectedFilename, event)}
           >
             Модифицировать
           </Button>,
