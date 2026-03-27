@@ -143,6 +143,38 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     # Возвращаем длительность проигрывания вместе с сообщением
     return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id, "mode": mode}
 
+# @app.post("/receive_file")
+# async def receive_file(request: Request, background_tasks: BackgroundTasks):
+#     # ✅ Получаем attack_id из HEADERS (от main сервера)
+#     attack_id = request.headers.get("attack-id")
+#     logger.info(f"📥 ПРОКСИ: файл для атаки '{attack_id}'")  # ← Теперь НЕ None!
+#     # Создаем временный файл для сохранения содержимого
+#     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+#         try:
+#             async for chunk in request.stream():
+#                 temp_file.write(chunk)
+
+
+#             temp_file_path = temp_file.name  # Сохраняем имя временного файла
+#             logger.info(f"Файл находится в {temp_file_path} для атаки {attack_id}")
+
+#         except Exception as e:
+#             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
+#             raise HTTPException(status_code=500, detail="Internal Server Error")
+#     filename = request.headers.get("filename")
+#     logger.info(f"Получаю файл {filename} для запуска")
+    
+#     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
+#     duration = str(get_pcap_duration(temp_file_path))
+
+
+#     # Запуск процесса в фоновом режиме
+#     background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration), attack_id)
+
+
+#     # Возвращаем длительность проигрывания вместе с сообщением
+#     return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id}
+
 @app.post("/stop")
 async def stop(data: dict):  # ✅ Принимаем данные!
     attack_id = data.get("attack_id")
