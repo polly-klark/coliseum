@@ -30,7 +30,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     api[type]({
       message: 'Информация',
       description:
-        'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified".',
+        'Если не изменить параметр "Имя файла", то по умолчанию к старому названию добавится "_modified"',
     });
   };
   const { 
@@ -42,71 +42,29 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     activeAttacks,
     startAttack,
     stopAttack, 
+    selectedMode, setSelectedMode,
+    loopCount, setLoopCount,
+    multiplier, setMultiplier,
+    ppsValue, setPpsValue,
+    renderModeOptions,
+    openPlay, setOpenPlay,
+    selectedFilename, setSelectedFilename,
+    options, handlePlayModal,
   } = usePlay();
   const [open, setOpen] = React.useState(false);
-  const [openPlay, setOpenPlay] = React.useState(false);
   const [portBox, setPortBox] = React.useState(false);
   const [IPBox, setIPBox] = React.useState(false);
   const [MACBox, setMACBox] = React.useState(false);
   const [TTLBox, setTTLBox] = React.useState(false);
   const [nameBox, setNameBox] = React.useState(false);
   const [keyOfTab, setKeyOfTab] = React.useState("1");
-  const [selectedFilename, setSelectedFilename] = React.useState("");
   const [newFilename, setNewFilename] = React.useState(selectedFilename);
   const [valueRadio, setValueRadio] = React.useState();
-  const [selectedMode, setSelectedMode] = React.useState('standart');
-  const [loopCount, setLoopCount] = React.useState(5);
-  const [multiplier, setMultiplier] = React.useState(2.0);
-  const [ppsValue, setPpsValue] = React.useState(200);
+  // const [selectedMode, setSelectedMode] = React.useState('standart');
+  // const [loopCount, setLoopCount] = React.useState(5);
+  // const [multiplier, setMultiplier] = React.useState(2.0);
+  // const [ppsValue, setPpsValue] = React.useState(200);
 
-  // В renderModeOptions:
-  const renderModeOptions = () => {
-    switch (selectedMode) {
-      case 'loop':
-        return (
-          <div>
-            <p>Количество повторений:</p>
-            <InputNumber 
-              min={1} max={100} 
-              value={loopCount} 
-              onChange={setLoopCount}
-            />
-          </div>
-        );
-      case 'mltiplier':
-        return (
-          <div>
-            <p>Множитель скорости:</p>
-            <InputNumber 
-              min={0.1} max={10} step={0.1} 
-              value={multiplier} 
-              onChange={setMultiplier}
-            />
-          </div>
-        );
-      case 'pps':
-        return (
-          <div>
-            <p>Пакетов в секунду:</p>
-            <InputNumber 
-              min={1} max={10000} 
-              value={ppsValue} 
-              onChange={setPpsValue}
-            />
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const options = [
-    { label: 'Обычный', value: 'standart' },
-    { label: 'Зациклить', value: 'loop' },
-    { label: 'Максимальная скорость', value: 'topspeed' },
-    { label: 'Умножить скорость', value: 'mltiplier' },
-    { label: 'Скорость вручную', value: 'pps' },
-  ];
   const onChangeRadio = e => {
     setValueRadio(e.target.value);
   };
@@ -582,11 +540,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       </>
     },
   ];
-  const handlePlayModal = async (filename, event) => {
-    event.preventDefault();
-    setOpenPlay(true);
-    setSelectedFilename(filename);
-  };
   const handleCancelPlay = () => {
     setOpenPlay(false);
     setSelectedFilename("");
@@ -595,7 +548,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setMultiplier(2.0);   // ✅ сброс
     setPpsValue(200);     // ✅ сброс
   };
-  
   const handlePlay = async (filename, event) => {
     event.preventDefault();
     console.log(`Проигрывается файл ${filename} в режиме ${selectedMode}`);
@@ -874,7 +826,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
             variant="outlined"
             onClick={handleCancelPlay}
           >
-            Отмена
+            Закрыть
           </Button>,
           <Button
             key="submit"

@@ -1,6 +1,6 @@
 import React from "react";
 import dayjs from "dayjs";
-import { Table, Space, message, Button, Statistic, Divider } from "antd";
+import { Table, Space, message, Button, Statistic, Divider, Typography, Modal, Radio, } from "antd";
 import "../App.css"; // Импорт вашего CSS файла
 import axios from "axios";
 import { usePlay } from '../Dashboard';
@@ -16,6 +16,14 @@ const BgTable = ({ data, user, token, fetchData }) => {
     remainingTimeBg, setRemainingTimeBg,
     initialRemainingTimeRefBg,
     startBg,
+    selectedMode, setSelectedMode,
+    loopCount, setLoopCount,
+    multiplier, setMultiplier,
+    ppsValue, setPpsValue,
+    renderModeOptions,
+    openPlay, setOpenPlay,
+    selectedFilename, setSelectedFilename,
+    options, handlePlayModal,
   } = usePlay();
   const handleDelete = async (filename, event) => {
     event.preventDefault(); // Предотвращаем переход по ссылке
@@ -59,28 +67,56 @@ const BgTable = ({ data, user, token, fetchData }) => {
   };
 
   const handlePlay = async (filename, event) => {
-    event.preventDefault(); // Предотвращаем переход по ссылке
-    console.log(`Проигрывается файл ${filename}`);
-    setStopFilenameBg(filename);
-    const attackId = Date.now() + Math.random().toString(36);  // ✅ Генерим ID
+    event.preventDefault();
+    console.log(`Проигрывается файл ${filename} в режиме ${selectedMode}`);
+  
+    const attackId = Date.now() + Math.random().toString(36);
+    const modeParams = {};
+  
+    // ✅ Берём значения из состояния инпутов
+    switch (selectedMode) {
+      case 'loop':
+        modeParams.loop_count = loopCount;
+        break;
+      case 'mltiplier':
+        modeParams.multiplier = multiplier;
+        break;
+      case 'pps':
+        modeParams.pps = ppsValue;
+        break;
+    }
+  
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/play_background/${filename}`, { attack_id: attackId }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.post(
+        `http://127.0.0.1:8000/play_background/${filename}`,
+        { 
+          attack_id: attackId,
+          mode: selectedMode,
+          mode_params: modeParams
         },
-      });
-      const { pid, attack_id } = response.data;  // ✅ Получаем обратно
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
       const parsedData = JSON.parse(response.data);
-      startBg(filename, parseFloat(parsedData.duration), attackId, pid);
-      const duration = Date.now() + parseFloat(parsedData.duration) * 1000;
-      setDeadLineBg(duration);
-      setRemainingTimeBg(parsedData.duration * 1000);
-      initialRemainingTimeRefBg.current = parsedData.duration * 1000
-      message.success(`Файл "${filename}" успешно передан на запуск`);
+      startBg(filename, parseFloat(parsedData.duration), attackId, parsedData.pid || 0);
+  
+      message.success(`Файл "${filename}" запущен в режиме ${selectedMode}`);
     } catch (error) {
       console.error("Ошибка при передаче файла:", error);
-      message.error(`Ошибка при передаче файла "${filename}"`);
+      message.error(`Ошибка при запуске "${filename}"`);
     }
+  };
+  const handleCancelPlay = () => {
+    setOpenPlay(false);
+    setSelectedFilename("");
+    setSelectedMode('standart');
+    setLoopCount(5);      // ✅ сброс
+    setMultiplier(2.0);   // ✅ сброс
+    setPpsValue(200);     // ✅ сброс
   };
   const handleStopBg = async () => {
     try {
@@ -118,7 +154,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
             <Space size="middle">
               <a
                 href="#"
-                onClick={(event) => handlePlay(record.filename, event)}
+                onClick={(event) => handlePlayModal(record.filename, event)}
               >
                 Запустить
               </a>
@@ -140,6 +176,52 @@ const BgTable = ({ data, user, token, fetchData }) => {
           )}
         />
       </Table>
+      <Modal
+        open={openPlay}
+        title={"Запуск " + selectedFilename}
+        onCancel={handleCancelPlay}
+        width={600}
+        footer={[
+          <Button
+            key="back"
+            color="cyan"
+            variant="outlined"
+            onClick={handleCancelPlay}
+          >
+            Закрыть
+          </Button>,
+          <Button
+            key="submit"
+            color="pink"
+            variant="solid"
+            onClick={(event) => handlePlay(selectedFilename, event)}
+          >
+            Запустить
+          </Button>,
+        ]}
+      >
+        <Typography.Title level={3} style={{ 
+          textAlign: "center", 
+          margin: "30px 0",
+          color: "#000000"
+        }}>
+          Выберите режим проигрывания трафика
+        </Typography.Title>
+        <Radio.Group
+          options={options}
+          value={selectedMode}  // ✅ контролируемое значение
+          onChange={(e) => setSelectedMode(e.target.value)} // ✅ получаем выбор
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '8px' 
+          }}
+        />
+        <Divider />
+        <div style={{ marginTop: '20px' }}>
+          {renderModeOptions()}
+        </div>
+      </Modal>
     </>
   );
 };

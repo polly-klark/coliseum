@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useRef } from "react";
 import axios from "axios";
-import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag } from "antd";
+import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag, InputNumber } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import "./App.css"; // Импорт вашего CSS файла
@@ -42,6 +42,19 @@ export function PlayProvider({ children }) {
   const [remainingTimeAttack, setRemainingTimeAttack] = useState(0);
   const [remainingTimeBg, setRemainingTimeBg] = useState(0);
   const [remainingTimeMod, setRemainingTimeMod] = useState(0);
+  const [selectedMode, setSelectedMode] = React.useState('standart');
+  const [loopCount, setLoopCount] = React.useState(5);
+  const [multiplier, setMultiplier] = React.useState(2.0);
+  const [ppsValue, setPpsValue] = React.useState(200);
+  const [openPlay, setOpenPlay] = React.useState(false);
+  const [selectedFilename, setSelectedFilename] = React.useState("");
+  const options = [
+    { label: 'Обычный', value: 'standart' },
+    { label: 'Зациклить', value: 'loop' },
+    { label: 'Максимальная скорость', value: 'topspeed' },
+    { label: 'Умножить скорость', value: 'mltiplier' },
+    { label: 'Скорость вручную', value: 'pps' },
+  ];
   // const startAttack = (durationMs) => {
   //   setDeadLineAttack(durationMs);           // 25000ms
   //   setRemainingTimeAttack(durationMs);
@@ -58,6 +71,51 @@ export function PlayProvider({ children }) {
   const initialRemainingTimeRefAttack = useRef(0);
   const initialRemainingTimeRefBg = useRef(0);
   const initialRemainingTimeRefMod = useRef(0);
+
+// В renderModeOptions:
+const renderModeOptions = () => {
+  switch (selectedMode) {
+    case 'standart':
+      return <div>Обычный режим — без дополнительных настроек</div>;
+    case 'loop':
+      return (
+        <div>
+          <p>Количество повторений:</p>
+          <InputNumber 
+            min={1} max={100} 
+            value={loopCount} 
+            onChange={setLoopCount}
+          />
+        </div>
+      );
+    case 'topspeed':
+      return <div>Максимальная скорость — игнорируются задержки</div>;
+    case 'mltiplier':
+      return (
+        <div>
+          <p>Множитель скорости:</p>
+          <InputNumber 
+            min={0.1} max={10} step={0.1} 
+            value={multiplier} 
+            onChange={setMultiplier}
+          />
+        </div>
+      );
+    case 'pps':
+      return (
+        <div>
+          <p>Пакетов в секунду:</p>
+          <InputNumber 
+            min={1} max={10000} 
+            value={ppsValue} 
+            onChange={setPpsValue}
+          />
+        </div>
+      );
+    default:
+      return null;
+  }
+};
 
   // Таймер:
 // useEffect(() => {
@@ -515,6 +573,12 @@ const getAttackStatus = async (attackId) => {
   return resp.data;
 };
 
+const handlePlayModal = async (filename, event) => {
+  event.preventDefault();
+  setOpenPlay(true);
+  setSelectedFilename(filename);
+};
+
   return (
     <PlayContext.Provider value={{
       stopFilenameAttack, setStopFilenameAttack,
@@ -551,6 +615,14 @@ const getAttackStatus = async (attackId) => {
       pauseAttack, resumeAttack, getAttackStatus,
       pauseBg, resumeBg,
       pauseMod, resumeMod,
+      selectedMode, setSelectedMode,
+      loopCount, setLoopCount,
+      multiplier, setMultiplier,
+      ppsValue, setPpsValue,
+      renderModeOptions,
+      openPlay, setOpenPlay,
+      selectedFilename, setSelectedFilename,
+      options, handlePlayModal,
     }}>
       {children}
     </PlayContext.Provider>
