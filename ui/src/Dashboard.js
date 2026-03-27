@@ -1121,7 +1121,7 @@ const Dashboard = ({ token }) => {
                 </div>
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
+                    value={Date.now() + (attack.effectiveDuration - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
