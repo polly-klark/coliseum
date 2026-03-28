@@ -55,8 +55,7 @@ def build_tcpreplay_command(pcap_path, mode, params):
 async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
     """
     Запускает tcpreplay с произвольной командой.
-    
-    cmd: ['sudo', 'tcpreplay', '-i', 'ens33', '--pps', '200', 'file.pcap']
+    Автоматически умножает delay для --loop режима.
     """
     try:
         logger.info(f"🚀 [{attack_id}] Запуск: {' '.join(cmd)}")
@@ -64,22 +63,37 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
         process = subprocess.Popen(cmd)
         pid = process.pid
 
-        # Прямые связи
-        r.set(f"tcpreplay:pid:{attack_id}", pid)
-        r.set(f"tcpreplay:file:{attack_id}", cmd[-1])  # последний аргумент — путь к pcap
-        r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
-        r.set(f"tcpreplay:cmd:{attack_id}", json.dumps(cmd))  # сохраняем команду для логов/отладки
+        # ✅ Парсим количество кругов из команды
+        loop_count = 1  # дефолт
+        for i in range(len(cmd)):
+            if cmd[i] == '--loop' and i + 1 < len(cmd):
+                try:
+                    loop_count = int(cmd[i + 1])
+                    logger.info(f"[{attack_id}] Loop режим: {loop_count} кругов")
+                    break
+                except ValueError:
+                    logger.warning(f"[{attack_id}] Неверное значение --loop: {cmd[i+1]}")
+                    break
 
-        # Обратная связь по pid
+        # Остальные Redis ключи
+        r.set(f"tcpreplay:pid:{attack_id}", pid)
+        r.set(f"tcpreplay:file:{attack_id}", cmd[-1])
+        r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
+        r.set(f"tcpreplay:cmd:{attack_id}", json.dumps(cmd))
+        r.set(f"tcpreplay:loops:{attack_id}", loop_count)  # ✅ сохраняем в Redis
+
         r.set(f"tcpreplay:attack:{pid}", attack_id)
 
-        await asyncio.sleep(delay + 1)
+        # ✅ Умножаем delay только для loop
+        total_delay = delay * loop_count if loop_count > 1 else delay + 1
+        logger.info(f"[{attack_id}] Ждём {total_delay:.1f}с (delay={delay}, loops={loop_count})")
+        
+        await asyncio.sleep(total_delay)
 
     except Exception as e:
         logger.error(f"run_tcpreplay[{attack_id}] ERROR: {e}")
     
     finally:
-        # Удаляем файл только если он временный (не трогаем исходные)
         pcap_path = cmd[-1] if cmd else None
         if pcap_path and os.path.exists(pcap_path):
             try:
@@ -87,6 +101,7 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
                 logger.info(f"[{attack_id}] Удалён временный файл {pcap_path}")
             except Exception as e:
                 logger.warning(f"[{attack_id}] Не удалось удалить {pcap_path}: {e}")
+
 
 
 def get_pcap_duration(file_path: str) -> float:
