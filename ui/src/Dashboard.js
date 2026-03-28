@@ -1132,10 +1132,20 @@ const Dashboard = ({ token }) => {
                     00:00:00 🛑
                   </div>
                 )}
+                {attack.status === 'running' && attack.mode === 'loop' && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    fontSize: '14px', 
+                    fontWeight: 500, 
+                    color: '#1890ff',
+                    marginTop: '8px'
+                  }}>
+                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          
           {/* ✅ Кнопка очистки */}
           {activeAttacks.some(a => a.status === 'completed') && (
             <Button 
