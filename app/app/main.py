@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status, Request, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status, Request
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
@@ -9,7 +9,6 @@ import scapy.all as scapy
 import json
 from models import User, hash_password, verify_password, rename_file, file_generator, ModificationRequest, PcapAnalyzer
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
 
 # Настройка логирования
 logging.basicConfig(filename='app.log', level=logging.INFO)
@@ -193,28 +192,21 @@ async def upload_file(file: UploadFile = File(...)):
 
 # Загружаем файл атаки
 @app.post("/attack/upload")
-async def upload_files(
-    files: List[UploadFile] = File(...)  # ✅ List[UploadFile]!
-):
-    uploaded_files = []
+async def upload_file(file: UploadFile = File(...)):
+    if file.filename == '':
+        raise HTTPException(status_code = 400, detail = "File has not name")
+
+    # Сохраняем файл в GridFS
+    try:
+        # Открываем поток для записи в GridFS
+        async with fsa.open_upload_stream(file.filename) as grid_in:
+            while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
+                await grid_in.write(content)
+    except Exception as e:
+        logger.error(f"Ошибка при получении файла: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     
-    for file in files:
-        if not file.filename or not file.filename.lower().endswith(('.pcap', '.pcapng')):
-            continue  # Пропускаем неподходящие
-        
-        try:
-            async with fsa.open_upload_stream(file.filename) as grid_in:
-                while content := await file.read(1024):
-                    await grid_in.write(content)
-            uploaded_files.append(file.filename)
-        except Exception as e:
-            logger.error(f"Ошибка загрузки {file.filename}: {str(e)}")
-            continue
-    
-    return {
-        "message": f"Загружено файлов: {len(uploaded_files)}",
-        "files": uploaded_files
-    }
+    return {"message": "File uploaded successfully", "filename": file.filename}
 
 # Получаем файл
 @app.get("/downloadattack/{filename}")

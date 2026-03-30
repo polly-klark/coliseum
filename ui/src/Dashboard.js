@@ -744,27 +744,30 @@ const Dashboard = ({ token }) => {
   const handleUpload = async (dir) => {
     const formData = new FormData();
     fileList.forEach((file) => {
-      formData.append("files", file);  // "files" для List[UploadFile]
+      formData.append("file", file);
     });
-    
     setUploading(true);
+    // You can use any AJAX library you like
     fetch(`http://127.0.0.1:8000/${dir}/upload`, {
       method: "POST",
       body: formData,
     })
-    .then(res => res.json())
-    .then(data => {
-      message.success(`Загружено: ${data.files?.length || 0} файлов`);
-      setFileList([]);
-    })
-    .catch(() => message.error("Ошибка загрузки!"))
-    .finally(() => {
-      setUploading(false);
-      setTimeout(async () => {
-        await fetchData(dir);
-        setOpenUpload(false);
-      }, 1000);
-    });
+      .then((res) => res.json())
+      .then(() => {
+        setFileList([]);
+        message.success(`Файл успешно загружен!`);
+      })
+      .catch(() => {
+        message.error("Загрузка не удалась!");
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+    console.log(dir)
+    setTimeout( async () => {
+      await fetchData(dir);
+      setOpenUpload(false);
+    }, 1000);
   };
   const props = {
     onRemove: (file) => {
@@ -832,20 +835,6 @@ const Dashboard = ({ token }) => {
     };
     fetchUser(); // Вызываем функцию для получения данных о пользователе
   }, [token]); // Зависимость от token, чтобы обновлять при изменении токена
-
-  const beforeUpload = (file) => {
-    const isPcap = file.name.endsWith('.pcap') || file.name.endsWith('.pcapng');
-    if (!isPcap) {
-      message.error('Только .pcap и .pcapng файлы!');
-      return Upload.LIST_IGNORE;
-    }
-    const isLt10M = file.size / 1024 / 1024 < 100;  // 100MB
-    if (!isLt10M) {
-      message.error('Файл не должен превышать 100MB!');
-      return Upload.LIST_IGNORE;
-    }
-    return true;
-  };
 
   // Обновляем action в зависимости от activeTable
   // useEffect(() => {
@@ -1485,13 +1474,7 @@ const Dashboard = ({ token }) => {
         }
       >
         <div>
-          <Dragger 
-            {...props}
-            accept=".pcap,.pcapng"  // ✅ Только эти расширения!
-            multiple={true}          // ✅ Несколько файлов!
-            maxCount={10}            // Максимум 10 файлов
-            beforeUpload={beforeUpload}
-          >
+          <Dragger {...props}>
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
@@ -1499,7 +1482,8 @@ const Dashboard = ({ token }) => {
               Нажмите или перетащите в эту область файл для загрузки
             </p>
             <p className="ant-upload-hint">
-              Поддерживает множественную загрузку (.pcap, .pcapng). Максимум 10 файлов.
+              Поддерживает загрузку по одному файлу. Строго запрещено 
+              загружать файлы в формате, отличном от .pcapng
             </p>
           </Dragger>
         </div>
