@@ -102,8 +102,6 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
             except Exception as e:
                 logger.warning(f"[{attack_id}] Не удалось удалить {pcap_path}: {e}")
 
-
-
 def get_pcap_duration(file_path: str) -> float:
     packets = rdpcap(file_path)
     start_time = packets[0].time
@@ -122,6 +120,15 @@ def cut_pcap_after_offset(src_path: str, dst_path: str, offset_sec: float):
                 t0 = ts  # время первого пакета в файле
             if ts - t0 >= offset_sec:
                 writer.writepkt(buf, ts)
+
+def estimate_topspeed_duration(pcap_path: str, interface_mbps: float = 1000) -> float:
+    """
+    Оценка времени topspeed: байты_pcap / скорость_интерфейса
+    """
+    import os
+    file_size = os.path.getsize(pcap_path) * 8  # байты → биты
+    estimated_sec = file_size / (interface_mbps * 1_000_000) * 1.5  # +50% запас
+    return max(estimated_sec, 1.0)  # минимум 1 сек
 
 @app.get("/hello")
 async def get_hello():
@@ -150,7 +157,10 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     logger.info(f"Получаю файл {filename} для запуска")
     cmd = build_tcpreplay_command(temp_file_path, mode, mode_params)
     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
-    duration = str(get_pcap_duration(temp_file_path))
+    if mode == "topspeed": 
+        duration = str(estimate_topspeed_duration(temp_file_path))
+    else: 
+        duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
     background_tasks.add_task(run_tcpreplay_cmd, cmd, float(duration), attack_id)
