@@ -197,35 +197,47 @@ const startAttack = (filename, durationSeconds, attackId, pid, mode, modeParams)
 
 
 // ✅ Добавляем новую атаку
-const startBg = (filename, durationSeconds, attackId, pid) => {
+const startBg = (filename, durationSeconds, attackId, pid, mode, modeParams) => {
+  const effectiveDuration = durationSeconds / (modeParams.multiplier || 1);
+  
   const newAttack = {
     id: attackId,
     filename,
     pid,
     status: 'running',
-
-    durationTotal: durationSeconds, // в секундах
+    durationTotal: durationSeconds,        // базовая длительность
     elapsed: 0,
     lastTickAt: Date.now(),
+    effectiveDuration,                     // скорректированная
+    mode,
+    modeParams,
+    loopCurrent: 0,
+    loopTotal: modeParams.loop_count || 1,
+    percent: 0,
   };
-  
-  console.log('🚀 Запуск атаки:', newAttack);
+
   setActiveBgs(prev => [...prev, newAttack]);
 };
 // ✅ Добавляем новую атаку
-const startMod = (filename, durationSeconds, attackId, pid) => {
+const startMod = (filename, durationSeconds, attackId, pid, mode, modeParams) => {
+  const effectiveDuration = durationSeconds / (modeParams.multiplier || 1);
+  
   const newAttack = {
     id: attackId,
     filename,
     pid,
     status: 'running',
-
-    durationTotal: durationSeconds, // в секундах
+    durationTotal: durationSeconds,        // базовая длительность
     elapsed: 0,
     lastTickAt: Date.now(),
+    effectiveDuration,                     // скорректированная
+    mode,
+    modeParams,
+    loopCurrent: 0,
+    loopTotal: modeParams.loop_count || 1,
+    percent: 0,
   };
-  
-  console.log('🚀 Запуск атаки:', newAttack);
+
   setActiveMods(prev => [...prev, newAttack]);
 };
 
@@ -283,39 +295,42 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveBgs(prev =>
       prev.map(a => {
-        if (
-          a.status === 'completed' ||
-          a.status === 'stopped' ||
-          a.status === 'paused' ||
-          a.lastTickAt == null
-        ) {
-          return a;
-        }
+        if (a.lastTickAt == null) return a;
 
         const now = Date.now();
         const deltaSec = (now - a.lastTickAt) / 1000;
-
         let elapsed = a.elapsed + deltaSec;
+        
+        const effectiveDuration = a.durationTotal / (a.modeParams?.multiplier || 1);
         let status = a.status;
+        let loopCurrent = a.loopCurrent;
 
-        if (elapsed >= a.durationTotal) {
-          elapsed = a.durationTotal;
-          status = 'completed';
+        if (elapsed >= effectiveDuration) {
+          elapsed = 0;
+          loopCurrent += 1;
+          
+          if (loopCurrent >= a.loopTotal) {
+            status = 'completed';
+            elapsed = effectiveDuration; // ✅ 100% в конце
+          }
         }
 
-        const rawPercent = (elapsed / a.durationTotal) * 100;
-        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+        // ✅ ВСЕГДА считаем percent
+        const percent = Math.min(100, Math.floor((elapsed / effectiveDuration) * 100));
 
+        // ✅ Обновляем ВСЕГДА
         return {
           ...a,
           elapsed,
           status,
           lastTickAt: now,
+          loopCurrent,
+          effectiveDuration,
           percent,
         };
       })
     );
-  }, 100); // тикаем раз в 100 мс для плавного роста
+  }, 100);
 
   return () => clearInterval(interval);
 }, []);
@@ -324,39 +339,42 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveMods(prev =>
       prev.map(a => {
-        if (
-          a.status === 'completed' ||
-          a.status === 'stopped' ||
-          a.status === 'paused' ||
-          a.lastTickAt == null
-        ) {
-          return a;
-        }
+        if (a.lastTickAt == null) return a;
 
         const now = Date.now();
         const deltaSec = (now - a.lastTickAt) / 1000;
-
         let elapsed = a.elapsed + deltaSec;
+        
+        const effectiveDuration = a.durationTotal / (a.modeParams?.multiplier || 1);
         let status = a.status;
+        let loopCurrent = a.loopCurrent;
 
-        if (elapsed >= a.durationTotal) {
-          elapsed = a.durationTotal;
-          status = 'completed';
+        if (elapsed >= effectiveDuration) {
+          elapsed = 0;
+          loopCurrent += 1;
+          
+          if (loopCurrent >= a.loopTotal) {
+            status = 'completed';
+            elapsed = effectiveDuration; // ✅ 100% в конце
+          }
         }
 
-        const rawPercent = (elapsed / a.durationTotal) * 100;
-        const percent = Math.min(100, Math.floor(rawPercent)); // целые %
+        // ✅ ВСЕГДА считаем percent
+        const percent = Math.min(100, Math.floor((elapsed / effectiveDuration) * 100));
 
+        // ✅ Обновляем ВСЕГДА
         return {
           ...a,
           elapsed,
           status,
           lastTickAt: now,
+          loopCurrent,
+          effectiveDuration,
           percent,
         };
       })
     );
-  }, 100); // тикаем раз в 100 мс для плавного роста
+  }, 100);
 
   return () => clearInterval(interval);
 }, []);
@@ -951,7 +969,7 @@ const Dashboard = ({ token }) => {
                 
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
+                    value={Date.now() + (attack.effectiveDuration - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
@@ -960,6 +978,17 @@ const Dashboard = ({ token }) => {
                 {attack.status === 'stopped' && (
                   <div className="countdown-timer" style={{color: '#ff4d4f'}}>
                     00:00:00 🛑
+                  </div>
+                )}
+                {attack.status === 'running' && attack.mode === 'loop' && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    fontSize: '14px', 
+                    fontWeight: 500, 
+                    color: '#1890ff',
+                    marginTop: '8px'
+                  }}>
+                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
                   </div>
                 )}
               </div>
@@ -1303,7 +1332,7 @@ const Dashboard = ({ token }) => {
                 
                 {attack.status === 'running' && (
                   <Countdown 
-                    value={Date.now() + (attack.durationTotal - attack.elapsed) * 1000} 
+                    value={Date.now() + (attack.effectiveDuration - attack.elapsed) * 1000} 
                     // onFinish={() => {}} 
                     format="HH:mm:ss"
                   />
@@ -1312,6 +1341,17 @@ const Dashboard = ({ token }) => {
                 {attack.status === 'stopped' && (
                   <div className="countdown-timer" style={{color: '#ff4d4f'}}>
                     00:00:00 🛑
+                  </div>
+                )}
+                {attack.status === 'running' && attack.mode === 'loop' && (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    fontSize: '14px', 
+                    fontWeight: 500, 
+                    color: '#1890ff',
+                    marginTop: '8px'
+                  }}>
+                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
                   </div>
                 )}
               </div>
