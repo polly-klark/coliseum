@@ -130,6 +130,25 @@ def estimate_topspeed_duration(pcap_path: str, interface_mbps: float = 1000) -> 
     estimated_sec = file_size / (interface_mbps * 1_000_000) * 1.5  # +50% запас
     return max(estimated_sec, 1.0)  # минимум 1 сек
 
+def estimate_pps_duration(pcap_path: str, pps: int = 1000) -> float:
+    """
+    Оценка времени по PPS: общее_колич_пакетов / пакетов_в_секунду
+    
+    pps=1000  → 1000 пакетов/сек
+    pps=10000 → 10k пакетов/сек (очень быстро!)
+    """
+    from scapy.all import rdpcap
+    import os
+    
+    packets = rdpcap(pcap_path)
+    packet_count = len(packets)
+    
+    if packet_count == 0:
+        return 1.0
+    
+    estimated_sec = packet_count / pps * 1.2  # +20% запас на overhead
+    return max(estimated_sec, 0.5)  # минимум 0.5 сек
+
 @app.get("/hello")
 async def get_hello():
     return("Hello world!")
@@ -140,7 +159,7 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     attack_id = request.headers.get("attack-id")
     mode = request.headers.get("mode", "standart")
     mode_params = json.loads(request.headers.get("mode-params", "{}"))
-    logger.info(f"📥 ПРОКСИ: файл для '{attack_id}', mode={mode}")  # ← Теперь НЕ None!
+    logger.info(f"📥 ПРОКСИ: файл для '{attack_id}', mode={mode}, mode_params={mode_params}")  # ← Теперь НЕ None!
     # Создаем временный файл для сохранения содержимого
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         try:
@@ -159,6 +178,9 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
     if mode == "topspeed": 
         duration = str(estimate_topspeed_duration(temp_file_path))
+    elif mode == "pps":
+        pps_value = mode_params.get('pps', 1000)  # 2 или дефолт 1000
+        duration = str(estimate_pps_duration(temp_file_path, pps_value))
     else: 
         duration = str(get_pcap_duration(temp_file_path))
 
