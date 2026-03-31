@@ -175,21 +175,40 @@ async def upload_file(file: UploadFile = File(...)):
 
 # Загружаем фоновый трафик
 @app.post("/background/upload")
-async def upload_file(file: UploadFile = File(...)):
-    if file.filename == '':
-        raise HTTPException(status_code = 400, detail = "File has not name")
-
-    # Сохраняем файл в GridFS
-    try:
-        # Открываем поток для записи в GridFS
-        async with fsb.open_upload_stream(file.filename) as grid_in:
-            while content := await file.read(1024):  # Читаем файл порциями по 1024 байта
-                await grid_in.write(content)
-    except Exception as e:
-        logger.error(f"Ошибка при получении файла: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+async def upload_file(files: List[UploadFile] = File(...)):
+    uploaded_files = []
     
-    return {"message": "File uploaded successfully", "filename": file.filename}
+    for file in files:
+        # ✅ Проверка имени
+        if not file.filename or file.filename == '':
+            logger.warning(f"Пустое имя файла пропущено")
+            continue
+        
+        # ✅ Проверка формата (двойная защита)
+        if not file.filename.lower().endswith(('.pcap', '.pcapng')):
+            logger.warning(f"Неподходящий формат: {file.filename}")
+            continue
+        
+        try:
+            # ✅ Сохраняем в GridFS
+            async with fsb.open_upload_stream(file.filename) as grid_in:
+                while content := await file.read(1024):
+                    await grid_in.write(content)
+            
+            uploaded_files.append(file.filename)
+            logger.info(f"✅ Загружен: {file.filename}")
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки {file.filename}: {str(e)}")
+            continue  # Продолжаем с остальными файлами
+    
+    # ✅ Возвращаем результат
+    return {
+        "message": f"Загрузка завершена",
+        "files": uploaded_files,
+        "total": len(uploaded_files),
+        "skipped": len(files) - len(uploaded_files)
+    }
 
 # Загружаем файл атаки
 @app.post("/attack/upload")
