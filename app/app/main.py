@@ -768,16 +768,33 @@ async def pause_attack(attack_id: str):
         )
         return {"status": "paused", "message": response.json()}
 
-@app.post("/resume/{attack_id}")
+@app.post("/resume/{attack_id}")  # Предполагаю такую сигнатуру
 async def resume_attack(attack_id: str):
-    logger.info(f"▶️ ВОЗОБНОВЛЕНИЕ атаки {attack_id}")
+    logger.info(f"▶️ ГЛАВНЫЙ: Возобновление {attack_id}")
+    
     async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"http://{IP_ADDDRES_FOR_PROXY}:9000/resume",
-            json={"attack_id": attack_id},
-            timeout=None
-        )
-        return {"status": "running", "message": response.json()}
+        try:
+            response = await client.post(
+                f"http://{IP_ADDDRES_FOR_PROXY}:9000/resume",
+                json={"attack_id": attack_id},  # ✅ JSON!
+                timeout=30.0
+            )
+            
+            # ✅ ПРОВЕРКА ПУСТОГО ТЕЛА!
+            if not response.text.strip():
+                logger.error(f"❌ Прокси вернул пустой ответ: {response.status_code}")
+                return {"status": "error", "message": "Прокси не отвечает"}
+            
+            result = response.json()
+            logger.info(f"✅ Прокси: {result}")
+            return {"status": "running", "message": result}
+            
+        except httpx.HTTPStatusError as e:
+            logger.error(f"❌ HTTP {e.response.status_code}: {e.response.text}")
+            return {"status": "error", "message": str(e)}
+        except json.JSONDecodeError:
+            logger.error(f"❌ Прокси вернул не-JSON: {response.text[:200]}")
+            return {"status": "error", "message": "Некорректный ответ прокси"}
 
 # main.py (8000)
 @app.get("/status/{attack_id}")
@@ -786,6 +803,33 @@ async def get_status(attack_id: str):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"http://{IP_ADDDRES_FOR_PROXY}:9000/status/{attack_id}")
         return resp.json()
+
+@app.post("/attack/stop_at_loop")
+async def stop_attack_at_loop(data: dict):
+    """Главный бэк → прокси → stop_at_loop"""
+    attack_id = data.get("attack_id")
+    target_loop = data.get("target_loop")
+    
+    logger.info(f"🛑 Главный бэк: остановка атаки {attack_id} на круге {target_loop}")
+    
+    headers = {
+        "attack-id": attack_id,
+        "Content-Type": "application/json"
+    }
+    
+    # Отправляем на прокси
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"http://{IP_ADDDRES_FOR_PROXY}:9000/stop_at_loop",
+            json={"attack_id": attack_id, "target_loop": target_loop},
+            headers=headers,
+            timeout=30.0
+        )
+        response.raise_for_status()
+    
+    result = response.json()
+    logger.info(f"✅ Прокси ответил: {result}")
+    return result
 
 # Запуск сервера (это можно сделать через командную строку)
 # uvicorn app:main --reload

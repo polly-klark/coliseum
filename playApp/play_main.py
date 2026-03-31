@@ -53,9 +53,6 @@ def build_tcpreplay_command(pcap_path, mode, params):
 
 
 async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str = "standart", mode_params: dict = None):
-    """
-    mode и mode_params опциональны для обратной совместимости
-    """
     mode_params = mode_params or {}
     
     try:
@@ -74,15 +71,25 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str =
                     break
                 except ValueError:
                     break
-
-        # ✅ Сохраняем ВСЕ данные в Redis
+        
+        # ✅ Счётчик кругов ТОЛЬКО для loop
+        if loop_count > 1:
+            current_loop = int(r.get(f"tcpreplay:loops_current:{attack_id}") or 0)
+            current_loop += 1
+            r.set(f"tcpreplay:loops_current:{attack_id}", current_loop)
+            logger.info(f"🔄 [{attack_id}] Круг {current_loop}/{loop_count}")
+        else:
+            # Сброс для не-loop атак
+            r.delete(f"tcpreplay:loops_current:{attack_id}")
+        
+        # ✅ Redis данные
         r.set(f"tcpreplay:pid:{attack_id}", pid)
         r.set(f"tcpreplay:file:{attack_id}", cmd[-1])
         r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
         r.set(f"tcpreplay:cmd:{attack_id}", json.dumps(cmd))
         r.set(f"tcpreplay:loops:{attack_id}", loop_count)
-        r.set(f"tcpreplay:mode:{attack_id}", mode)           # ✅ Теперь работает!
-        r.set(f"tcpreplay:mode_params:{attack_id}", json.dumps(mode_params))  # ✅ Работает!
+        r.set(f"tcpreplay:mode:{attack_id}", mode)
+        r.set(f"tcpreplay:mode_params:{attack_id}", json.dumps(mode_params))
         r.set(f"tcpreplay:attack:{pid}", attack_id)
 
         total_delay = delay * loop_count if loop_count > 1 else delay + 1
@@ -327,47 +334,48 @@ async def pause(data: dict):
 @app.post("/resume")
 async def resume(data: dict, background_tasks: BackgroundTasks):
     attack_id = data.get("attack_id")
-    logger.info(f"▶️ Возобновляем {attack_id}")
+    logger.info(f"▶️ ПРОКСИ: Возобновляем {attack_id}")
     
-    # ✅ 1. Проверяем наличие обрезанного файла
+    # 1. Файл
     file_data = r.get(f"tcpreplay:file:{attack_id}")
     if not file_data:
-        return {"error": "Файл не найден (атака не на паузе?)"}
-    
+        return {"error": "Файл не найден"}
     pcap_path = file_data.decode("utf-8")
     
-    # ✅ 2. Получаем параметры режима
-    mode = r.get(f"tcpreplay:mode:{attack_id}") or "standart"
-    mode_params_json = r.get(f"tcpreplay:mode_params:{attack_id}") or "{}"
+    # 2. Параметры
+    mode_data = r.get(f"tcpreplay:mode:{attack_id}")
+    mode = mode_data.decode("utf-8") if mode_data else "standart"
+    
+    mode_params_data = r.get(f"tcpreplay:mode_params:{attack_id}")
+    mode_params_json = mode_params_data.decode("utf-8") if mode_params_data else "{}"
     mode_params = json.loads(mode_params_json)
     
-    # ✅ 3. Вычисляем длительность обрезанного файла
+    # ✅ 3. LOOP ПАРАМЕТРЫ (ТЕПЕРЬ ОПРЕДЕЛЕНЫ!)
+    original_loops_data = r.get(f"tcpreplay:loops:{attack_id}")
+    original_loops = int(original_loops_data.decode("utf-8")) if original_loops_data else 1
+    
+    current_loop_data = r.get(f"tcpreplay:loops_current:{attack_id}")
+    current_loop = int(current_loop_data.decode("utf-8")) if current_loop_data else 0
+    
+    # 4. Оставшиеся круги
+    remaining_loops = max(1, original_loops - current_loop)
+    mode_params['loop_count'] = remaining_loops  # Перезаписываем!
+    
+    logger.info(f"📊 [{attack_id}] Было {original_loops}, текущий {current_loop}, осталось {remaining_loops}")
+    
+    # 5. Длительность
     if mode == "topspeed":
-        duration = estimate_topspeed_duration(pcap_path)
+        duration = estimate_topspeed_duration(pcap_path) * remaining_loops
     elif mode == "pps":
-        pps = mode_params.get('pps', 1000)
-        duration = estimate_pps_duration(pcap_path, pps)
+        duration = estimate_pps_duration(pcap_path, mode_params.get('pps', 1000)) * remaining_loops
     else:
-        duration = get_pcap_duration(pcap_path)
+        duration = get_pcap_duration(pcap_path) * remaining_loops
     
-    # ✅ 4. Запускаем с тем же кодом!
+    # 6. Запуск
     cmd = build_tcpreplay_command(pcap_path, mode, mode_params)
-    background_tasks.add_task(
-        run_tcpreplay_cmd, 
-        cmd, 
-        float(duration), 
-        attack_id,
-        pcap_path,           # ✅ 4й аргумент!
-        mode_params               # ✅ 5й аргумент!
-    )
+    background_tasks.add_task(run_tcpreplay_cmd, cmd, float(duration), attack_id, pcap_path, mode_params)
     
-    logger.info(f"🚀 [{attack_id}] Запущен новый процесс с {pcap_path}")
-    
-    return {
-        "message": f"Возобновлено ({duration:.1f}с осталось)",
-        "duration": duration,
-        "attack_id": attack_id
-    }
+    return {"message": f"Возобновлено: {remaining_loops} кругов ({duration:.1f}с)"}
 
 @app.get("/status/{attack_id}")
 async def get_status(attack_id: str):
@@ -404,3 +412,46 @@ async def get_status(attack_id: str):
             traceback.format_exc(),
         )
         return {"error": f"{type(e).__name__}: {e}"}
+
+@app.post("/stop_at_loop")
+async def stop_at_loop(data: dict, background_tasks: BackgroundTasks):
+    attack_id = data.get("attack_id")
+    target_loop_raw = data.get("target_loop")
+    
+    # ✅ ПРОВЕРКА target_loop!
+    if target_loop_raw is None:
+        logger.error(f"❌ stop_at_loop: target_loop отсутствует в data={data}")
+        raise HTTPException(400, "target_loop required")
+    
+    target_loop = int(target_loop_raw)
+    
+    logger.info(f"🛑 [{attack_id}] Остановка на круге {target_loop}")
+    
+    # Остальной код без изменений...
+    current_loop = int(r.get(f"tcpreplay:loops_current:{attack_id}") or 0)
+    total_loops = int(r.get(f"tcpreplay:loops:{attack_id}") or 1)
+    
+    if target_loop <= current_loop:
+        return {"error": f"Уже прошли круг {target_loop}"}
+    
+    pcap_path = r.get(f"tcpreplay:file:{attack_id}")
+    if not pcap_path:
+        return {"error": "Файл не найден"}
+    
+    pcap_path = pcap_path.decode()
+    elapsed_per_loop = get_pcap_duration(pcap_path)
+    total_elapsed = elapsed_per_loop * (target_loop - 1)
+    cut_path = cut_pcap_after_offset(pcap_path, total_elapsed)
+    
+    r.set(f"tcpreplay:file:{attack_id}", cut_path)
+    r.set(f"tcpreplay:loops_current:{attack_id}", target_loop - 1)
+    
+    # Убиваем процесс
+    pid = r.get(f"tcpreplay:pid:{attack_id}")
+    if pid:
+        try:
+            os.kill(int(pid.decode()), signal.SIGKILL)
+        except:
+            pass
+    
+    return {"message": f"Остановлено перед кругом {target_loop}"}

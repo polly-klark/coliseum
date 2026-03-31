@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useRef } from "react";
 import axios from "axios";
-import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag, InputNumber, Alert, } from "antd";
+import { Button, Divider, Modal, Space, Upload, message, Statistic, Progress, Flex, Tag, InputNumber, Alert, Select, } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import "./App.css"; // Импорт вашего CSS файла
@@ -875,6 +875,41 @@ const Dashboard = ({ token }) => {
   //   }
   // }, [activeTable]);
 
+  // В компоненте с атаками
+  const [stopLoopTargets, setStopLoopTargets] = useState({});  // {attackId: targetLoop}
+
+  const setStopAtLoop = (attackId, value) => {
+    setStopLoopTargets(prev => ({
+      ...prev,
+      [attackId]: parseInt(value)
+    }));
+  };
+
+  const stopAtLoop = async (attackId, stopLoopValue) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/attack/stop_at_loop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          attack_id: attackId, 
+          target_loop: stopLoopValue 
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.error) {
+        message.error(result.error);
+      } else {
+        message.success(result.message);
+        // // Обновить статус атаки
+        // await updateAttackStatus(attackId);
+      }
+    } catch (error) {
+      message.error('Ошибка остановки атаки');
+      console.error(error);
+    }
+  };
   return (
     <>
       <header>Вы под пользователем {user ? user : "Загрузка..."}</header>
@@ -1174,15 +1209,17 @@ const Dashboard = ({ token }) => {
                   </div>
                 )}
                 {attack.status === 'running' && attack.mode === 'loop' && (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    fontSize: '14px', 
-                    fontWeight: 500, 
-                    color: '#1890ff',
-                    marginTop: '8px'
-                  }}>
-                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
-                  </div>
+                  <Space>
+                    <Button 
+                      size="small" 
+                      onClick={() => pauseAttack(attack.id)}  // ✅ Текущий круг!
+                    >
+                      ⏸️ Пауза сейчас (круг {attack.loopCurrent + 1}/{attack.loopTotal})
+                    </Button>
+                    <Button danger size="small" onClick={() => stopAttack(attack.id)}>
+                      🛑 Остановить
+                    </Button>
+                  </Space>
                 )}
               </div>
             ))}
