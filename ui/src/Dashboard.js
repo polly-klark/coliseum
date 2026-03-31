@@ -761,31 +761,34 @@ const Dashboard = ({ token }) => {
   };
   const handleUpload = async (dir) => {
     const formData = new FormData();
-    fileList.forEach((file) => {
-      formData.append("file", file);
+    
+    fileList.forEach((fileObj) => {
+      // ✅ КРИТИЧНО: originFileObj содержит настоящий File!
+      const file = fileObj.originFileObj || fileObj;
+      formData.append("files", file);
     });
+    
     setUploading(true);
-    // You can use any AJAX library you like
-    fetch(`http://127.0.0.1:8000/${dir}/upload`, {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setFileList([]);
-        message.success(`Файл успешно загружен!`);
-      })
-      .catch(() => {
-        message.error("Загрузка не удалась!");
-      })
-      .finally(() => {
-        setUploading(false);
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/${dir}/upload`, {
+        method: "POST",
+        body: formData,
       });
-    console.log(dir)
-    setTimeout( async () => {
-      await fetchData(dir);
-      setOpenUpload(false);
-    }, 1000);
+      
+      const result = await response.json();
+      setFileList([]);
+      message.success(`Загружено: ${result.files?.length || 0} файлов`);
+      
+    } catch (error) {
+      message.error("Ошибка загрузки!");
+    } finally {
+      setUploading(false);
+      setTimeout(async () => {
+        await fetchData(dir);
+        setOpenUpload(false);
+      }, 1000);
+    }
   };
   const props = {
     name: 'files',
