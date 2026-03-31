@@ -3,7 +3,7 @@ from fastapi import BackgroundTasks, FastAPI, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from subprocess import check_output
-from scapy.all import rdpcap
+from scapy.all import rdpcap, wrpcap
 
 def get_pid(name):
     return check_output(["pidof",name])
@@ -52,41 +52,41 @@ def build_tcpreplay_command(pcap_path, mode, params):
     return base_cmd
 
 
-async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
+async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str = "standart", mode_params: dict = None):
     """
-    Запускает tcpreplay с произвольной командой.
-    Автоматически умножает delay для --loop режима.
+    mode и mode_params опциональны для обратной совместимости
     """
+    mode_params = mode_params or {}
+    
     try:
         logger.info(f"🚀 [{attack_id}] Запуск: {' '.join(cmd)}")
         
         process = subprocess.Popen(cmd)
         pid = process.pid
 
-        # ✅ Парсим количество кругов из команды
-        loop_count = 1  # дефолт
+        # ✅ Парсим loop
+        loop_count = 1
         for i in range(len(cmd)):
             if cmd[i] == '--loop' and i + 1 < len(cmd):
                 try:
                     loop_count = int(cmd[i + 1])
-                    logger.info(f"[{attack_id}] Loop режим: {loop_count} кругов")
+                    logger.info(f"[{attack_id}] Loop: {loop_count}")
                     break
                 except ValueError:
-                    logger.warning(f"[{attack_id}] Неверное значение --loop: {cmd[i+1]}")
                     break
 
-        # Остальные Redis ключи
+        # ✅ Сохраняем ВСЕ данные в Redis
         r.set(f"tcpreplay:pid:{attack_id}", pid)
         r.set(f"tcpreplay:file:{attack_id}", cmd[-1])
         r.set(f"tcpreplay:start_time:{attack_id}", str(time.time()))
         r.set(f"tcpreplay:cmd:{attack_id}", json.dumps(cmd))
-        r.set(f"tcpreplay:loops:{attack_id}", loop_count)  # ✅ сохраняем в Redis
-
+        r.set(f"tcpreplay:loops:{attack_id}", loop_count)
+        r.set(f"tcpreplay:mode:{attack_id}", mode)           # ✅ Теперь работает!
+        r.set(f"tcpreplay:mode_params:{attack_id}", json.dumps(mode_params))  # ✅ Работает!
         r.set(f"tcpreplay:attack:{pid}", attack_id)
 
-        # ✅ Умножаем delay только для loop
         total_delay = delay * loop_count if loop_count > 1 else delay + 1
-        logger.info(f"[{attack_id}] Ждём {total_delay:.1f}с (delay={delay}, loops={loop_count})")
+        logger.info(f"[{attack_id}] Ждём {total_delay:.1f}с")
         
         await asyncio.sleep(total_delay)
 
@@ -98,9 +98,9 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str):
         if pcap_path and os.path.exists(pcap_path):
             try:
                 os.remove(pcap_path)
-                logger.info(f"[{attack_id}] Удалён временный файл {pcap_path}")
+                logger.info(f"[{attack_id}] Удалён {pcap_path}")
             except Exception as e:
-                logger.warning(f"[{attack_id}] Не удалось удалить {pcap_path}: {e}")
+                logger.warning(f"[{attack_id}] Не удалён {pcap_path}: {e}")
 
 def get_pcap_duration(file_path: str) -> float:
     packets = rdpcap(file_path)
@@ -185,7 +185,15 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
         duration = str(get_pcap_duration(temp_file_path))
 
     # Запуск процесса в фоновом режиме
-    background_tasks.add_task(run_tcpreplay_cmd, cmd, float(duration), attack_id)
+    # В конце receive_file:
+    background_tasks.add_task(
+        run_tcpreplay_cmd, 
+        cmd, 
+        float(duration), 
+        attack_id,
+        temp_file_path,           # ✅ 4й аргумент!
+        mode_params               # ✅ 5й аргумент!
+    )
 
     # Возвращаем длительность проигрывания вместе с сообщением
     return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id, "mode": mode}
@@ -319,25 +327,46 @@ async def pause(data: dict):
 @app.post("/resume")
 async def resume(data: dict, background_tasks: BackgroundTasks):
     attack_id = data.get("attack_id")
-    logger.info(f"▶️ Возобновляем атаку {attack_id}")
-
+    logger.info(f"▶️ Возобновляем {attack_id}")
+    
+    # ✅ 1. Проверяем наличие обрезанного файла
     file_data = r.get(f"tcpreplay:file:{attack_id}")
     if not file_data:
-        logger.error(f"Файл для атаки {attack_id} не найден")
-        return {"message": f"Файл для атаки {attack_id} не найден"}
-
+        return {"error": "Файл не найден (атака не на паузе?)"}
+    
     pcap_path = file_data.decode("utf-8")
-
-    # Можно пересчитать duration, как в receive_file
-    duration = str(get_pcap_duration(pcap_path))
-
-    # Запускаем tcpreplay в фоне
-    background_tasks.add_task(run_tcpreplay, pcap_path, float(duration), attack_id)
-
+    
+    # ✅ 2. Получаем параметры режима
+    mode = r.get(f"tcpreplay:mode:{attack_id}") or "standart"
+    mode_params_json = r.get(f"tcpreplay:mode_params:{attack_id}") or "{}"
+    mode_params = json.loads(mode_params_json)
+    
+    # ✅ 3. Вычисляем длительность обрезанного файла
+    if mode == "topspeed":
+        duration = estimate_topspeed_duration(pcap_path)
+    elif mode == "pps":
+        pps = mode_params.get('pps', 1000)
+        duration = estimate_pps_duration(pcap_path, pps)
+    else:
+        duration = get_pcap_duration(pcap_path)
+    
+    # ✅ 4. Запускаем с тем же кодом!
+    cmd = build_tcpreplay_command(pcap_path, mode, mode_params)
+    background_tasks.add_task(
+        run_tcpreplay_cmd, 
+        cmd, 
+        float(duration), 
+        attack_id,
+        pcap_path,           # ✅ 4й аргумент!
+        mode_params               # ✅ 5й аргумент!
+    )
+    
+    logger.info(f"🚀 [{attack_id}] Запущен новый процесс с {pcap_path}")
+    
     return {
-        "message": f"Атака {attack_id} возобновлена из {pcap_path}",
+        "message": f"Возобновлено ({duration:.1f}с осталось)",
         "duration": duration,
-        "attack_id": attack_id,
+        "attack_id": attack_id
     }
 
 @app.get("/status/{attack_id}")
