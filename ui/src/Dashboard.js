@@ -788,17 +788,26 @@ const Dashboard = ({ token }) => {
     }, 1000);
   };
   const props = {
-    onRemove: (file) => {
-      const index = fileList.indexOf(file);
-      const newFileList = fileList.slice();
-      newFileList.splice(index, 1);
-      setFileList(newFileList);
-    },
-    beforeUpload: (file) => {
-      setFileList([...fileList, file]);
-      return false;
-    },
+    name: 'files',
+    multiple: true,
+    maxCount: 10,  // ✅ БЛОКИРУЕТ выбор >10!
     fileList,
+    onChange: ({ fileList: newList }) => {
+      // ✅ Фильтруем только PCAP
+      const validList = newList.filter(file => 
+        /\.(pcap|pcapng)$/i.test(file.name) 
+      );
+      
+      setFileList(validList);
+      
+      if (newList.length !== validList.length) {
+        message.warning(`Отклонено: ${newList.length - validList.length} файлов`);
+      }
+    },
+    onRemove: file => {
+      setFileList(prev => prev.filter(f => f.uid !== file.uid));
+    },
+    beforeUpload: () => false,  // ✅ ЖЁСТКО блокируем!
   };
   const handleUploadModal = () => {
     setOpenUpload(true);
@@ -1514,7 +1523,9 @@ const Dashboard = ({ token }) => {
         }
       >
         <div>
-          <Dragger {...props}>
+          <Dragger 
+            {...props}
+          >
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
