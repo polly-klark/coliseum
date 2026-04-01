@@ -299,6 +299,11 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveBgs(prev =>
       prev.map(a => {
+
+        if (a.status === 'stopped') {
+          return { ...a };  // НЕ крутим Progress!
+        }
+        
         if (a.lastTickAt == null) return a;
 
         const now = Date.now();
@@ -343,6 +348,11 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveMods(prev =>
       prev.map(a => {
+
+        if (a.status === 'stopped') {
+          return { ...a };  // НЕ крутим Progress!
+        }
+        
         if (a.lastTickAt == null) return a;
 
         const now = Date.now();
