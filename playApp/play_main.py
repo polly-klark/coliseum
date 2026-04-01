@@ -92,10 +92,11 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str =
         r.set(f"tcpreplay:mode_params:{attack_id}", json.dumps(mode_params))
         r.set(f"tcpreplay:attack:{pid}", attack_id)
 
-        total_delay = delay * loop_count if loop_count > 1 else delay + 1
-        logger.info(f"[{attack_id}] Ждём {total_delay:.1f}с")
+        # total_delay = delay * loop_count if loop_count > 1 else delay + 1
+        # logger.info(f"[{attack_id}] Ждём {total_delay:.1f}с")
         
-        await asyncio.sleep(total_delay)
+        # await asyncio.sleep(total_delay)
+        await asyncio.sleep(600)
 
     except Exception as e:
         logger.error(f"run_tcpreplay[{attack_id}] ERROR: {e}")
@@ -109,12 +110,18 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str =
             except Exception as e:
                 logger.warning(f"[{attack_id}] Не удалён {pcap_path}: {e}")
 
-def get_pcap_duration(file_path: str) -> float:
-    packets = rdpcap(file_path)
-    start_time = packets[0].time
-    end_time = packets[-1].time
-    duration = end_time - start_time
-    return duration
+def get_pcap_duration(pcap_path):
+    try:
+        packets = rdpcap(pcap_path)
+        if not packets:
+            return 0.0
+        
+        start_time = float(packets[0].time)  # ✅ float!
+        end_time = float(packets[-1].time)   # ✅ float!
+        return float(end_time - start_time)  # ✅ float!
+    except Exception as e:
+        logger.error(f"PCAP ошибка {pcap_path}: {e}")
+        return 0.0
 
 def cut_pcap_after_offset(src_path: str, dst_path: str, offset_sec: float):
     with open(src_path, "rb") as f_in, open(dst_path, "wb") as f_out:
@@ -155,6 +162,22 @@ def estimate_pps_duration(pcap_path: str, pps: int = 1000) -> float:
     
     estimated_sec = packet_count / pps * 1.2  # +20% запас на overhead
     return max(estimated_sec, 0.5)  # минимум 0.5 сек
+
+async def schedule_loop_resume(attack_id: str, original_path: str, mode: str, mode_params: dict, remaining_loops: int, delay: float):
+    """Запуск оставшихся кругов с задержкой"""
+    await asyncio.sleep(delay)
+    
+    original_duration = get_pcap_duration(original_path)
+    params = mode_params.copy()
+    params['loop_count'] = remaining_loops
+    
+    cmd = build_tcpreplay_command(original_path, "loop", params)
+    # Создаём ВРЕМЕННЫЙ background_tasks
+    from fastapi import BackgroundTasks
+    temp_tasks = BackgroundTasks()
+    temp_tasks.add_task(run_tcpreplay_cmd, cmd, delay, attack_id, original_path, params)
+    # Запускаем через event loop
+    asyncio.create_task(temp_tasks())
 
 @app.get("/hello")
 async def get_hello():
@@ -198,7 +221,7 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
         cmd, 
         float(duration), 
         attack_id,
-        temp_file_path,           # ✅ 4й аргумент!
+        mode,           # ✅ 4й аргумент!
         mode_params               # ✅ 5й аргумент!
     )
 
@@ -256,6 +279,27 @@ async def stop(data: dict):  # ✅ Принимаем данные!
     except psutil.NoSuchProcess:
         mes = f"Процесс {pid} не найден"
     
+    # ✅ ← ВСТАВЬ ЗДЕСЬ! (расчёт %)
+    start_data = r.get(f"tcpreplay:start_time:{attack_id}")
+    file_data = r.get(f"tcpreplay:file:{attack_id}")
+    
+    current_percent = 0.0
+    if start_data and file_data:
+        start_time = float(start_data.decode())
+        now = time.time()
+        elapsed = max(0.0, now - start_time)
+        
+        pcap_path = file_data.decode()
+        total_duration = get_pcap_duration(pcap_path)
+        
+        current_percent = min(100.0, (elapsed / total_duration * 100) if total_duration > 0 else 0)
+        
+        # ✅ СОХРАНЯЕМ для Frontend!
+        r.set(f"tcpreplay:percent:{attack_id}", str(int(current_percent)))
+        r.set(f"tcpreplay:status:{attack_id}", "stopped")
+        logger.info(f"🛑 [{attack_id}] Остановлен на {current_percent:.1f}%")
+    # ← КОНЕЦ ВСТАВКИ
+    
     # ✅ Удаляем ВСЕ ключи Redis для этой атаки
     file_path = r.get(f'tcpreplay:file:{attack_id}')
     r.delete(f'tcpreplay:pid:{attack_id}')
@@ -306,15 +350,27 @@ async def pause(data: dict):
     try:
         cut_pcap_after_offset(src_path, new_path, elapsed)
         logger.info(f"PAUSE[{attack_id}]: урезанный файл сохранён в {new_path}")
+        # ✅ ← ВСТАВЬ ЗДЕСЬ! (строки 15-25)
+        mode_data = r.get(f"tcpreplay:mode:{attack_id}")
+        mode = mode_data.decode("utf-8") if mode_data else "standart"
+        logger.info(f"PAUSE[{attack_id}]: mode: {mode}")
+        if mode == "loop":
+            original_path_data = r.get(f"tcpreplay:original_file:{attack_id}")
+            if not original_path_data:
+                # ✅ ПЕРВЫЙ РАЗ — сохраняем оригинал!
+                r.set(f"tcpreplay:original_file:{attack_id}", src_path)
+                logger.info(f"LOOP [{attack_id}] ОРИГИНАЛ сохранён: {src_path}")
     except Exception as e:
         logger.error(f"PAUSE[{attack_id}]: ошибка при нарезке pcap: {e}")
         return {"error": f"pcap_cut_failed: {e}"}
 
     # 3) Старый pcap можно удалить, если он тоже временный
     try:
-        if os.path.exists(src_path):
+        if mode != "loop" and os.path.exists(src_path):
             os.remove(src_path)
-            logger.info(f"PAUSE[{attack_id}]: удалён старый файл {src_path}")
+            logger.info(f"PAUSE[{attack_id}]: удалён старый файл {src_path} (не-loop)")
+        elif mode == "loop":
+            logger.info(f"PAUSE[{attack_id}]: LOOP — src_path {src_path} ОСТАВЛЯЕМ!")
     except Exception as e:
         logger.warning(f"PAUSE[{attack_id}]: не удалось удалить {src_path}: {e}")
 
@@ -334,48 +390,50 @@ async def pause(data: dict):
 @app.post("/resume")
 async def resume(data: dict, background_tasks: BackgroundTasks):
     attack_id = data.get("attack_id")
-    logger.info(f"▶️ ПРОКСИ: Возобновляем {attack_id}")
     
-    # 1. Файл
     file_data = r.get(f"tcpreplay:file:{attack_id}")
-    if not file_data:
-        return {"error": "Файл не найден"}
     pcap_path = file_data.decode("utf-8")
     
-    # 2. Параметры
+    # ✅ ФИКС Redis!
     mode_data = r.get(f"tcpreplay:mode:{attack_id}")
     mode = mode_data.decode("utf-8") if mode_data else "standart"
     
     mode_params_data = r.get(f"tcpreplay:mode_params:{attack_id}")
-    mode_params_json = mode_params_data.decode("utf-8") if mode_params_data else "{}"
-    mode_params = json.loads(mode_params_json)
+    mode_params = json.loads(mode_params_data.decode("utf-8") if mode_params_data else "{}")
     
-    # ✅ 3. LOOP ПАРАМЕТРЫ (ТЕПЕРЬ ОПРЕДЕЛЕНЫ!)
-    original_loops_data = r.get(f"tcpreplay:loops:{attack_id}")
-    original_loops = int(original_loops_data.decode("utf-8")) if original_loops_data else 1
+    # ✅ Длительность обрезанного файла
+    duration = get_pcap_duration(pcap_path)  # Универсально!
     
-    current_loop_data = r.get(f"tcpreplay:loops_current:{attack_id}")
-    current_loop = int(current_loop_data.decode("utf-8")) if current_loop_data else 0
-    
-    # 4. Оставшиеся круги
-    remaining_loops = max(1, original_loops - current_loop)
-    mode_params['loop_count'] = remaining_loops  # Перезаписываем!
-    
-    logger.info(f"📊 [{attack_id}] Было {original_loops}, текущий {current_loop}, осталось {remaining_loops}")
-    
-    # 5. Длительность
-    if mode == "topspeed":
-        duration = estimate_topspeed_duration(pcap_path) * remaining_loops
-    elif mode == "pps":
-        duration = estimate_pps_duration(pcap_path, mode_params.get('pps', 1000)) * remaining_loops
+    if mode == "loop":
+        original_data = r.get(f"tcpreplay:original_file:{attack_id}")
+        if original_data:
+            original_path = original_data.decode()
+            original_loops = int(r.get(f"tcpreplay:loops:{attack_id}"))
+            current_loop = int(r.get(f"tcpreplay:loops_current:{attack_id}"))
+            remaining_loops = original_loops - current_loop
+            
+            logger.info(f"🔄 LOOP [{attack_id}] Доиграть круг + {remaining_loops} кругов")
+            
+            # 1. Доиграть текущий (обрезанный)
+            cmd1 = build_tcpreplay_command(pcap_path, "standart", mode_params)
+            background_tasks.add_task(run_tcpreplay_cmd, cmd1, duration, attack_id, mode, mode_params)
+            
+            # 2. После — запустить оригинал с оставшимися
+            asyncio.create_task(schedule_loop_resume(attack_id, original_path, mode, mode_params, remaining_loops, duration + 1))
+            
+            # total_duration = duration + (get_pcap_duration(original_path) * remaining_loops)
+        else:
+            # Fallback
+            cmd = build_tcpreplay_command(pcap_path, mode, mode_params)
+            background_tasks.add_task(run_tcpreplay_cmd, cmd, duration, attack_id, mode, mode_params)
+            # total_duration = duration
     else:
-        duration = get_pcap_duration(pcap_path) * remaining_loops
+        # НЕ-loop — просто доиграть
+        cmd = build_tcpreplay_command(pcap_path, mode, mode_params)
+        background_tasks.add_task(run_tcpreplay_cmd, cmd, duration, attack_id, mode, mode_params)
+        # total_duration = duration
     
-    # 6. Запуск
-    cmd = build_tcpreplay_command(pcap_path, mode, mode_params)
-    background_tasks.add_task(run_tcpreplay_cmd, cmd, float(duration), attack_id, pcap_path, mode_params)
-    
-    return {"message": f"Возобновлено: {remaining_loops} кругов ({duration:.1f}с)"}
+    return {"message": "Возобновлено"}
 
 @app.get("/status/{attack_id}")
 async def get_status(attack_id: str):

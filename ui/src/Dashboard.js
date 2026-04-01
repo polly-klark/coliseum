@@ -246,6 +246,10 @@ useEffect(() => {
   const interval = setInterval(() => {
     setActiveAttacks(prev =>
       prev.map(a => {
+
+        if (a.status === 'stopped') {
+          return { ...a };  // НЕ крутим Progress!
+        }
         if (a.lastTickAt == null) return a;
 
         const now = Date.now();
