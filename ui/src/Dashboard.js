@@ -808,6 +808,7 @@ const Dashboard = ({ token }) => {
     name: 'files',
     multiple: true,
     maxCount: 10,  // ✅ БЛОКИРУЕТ выбор >10!
+    accept: ".pcap,.pcapng",  // ← В диалоге только PCAP!
     fileList,
     onChange: ({ fileList: newList }) => {
       // ✅ Фильтруем только PCAP
