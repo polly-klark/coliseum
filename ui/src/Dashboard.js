@@ -1159,14 +1159,16 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      {attack.mode !== 'topspeed' && (
+                      {attack.mode !== 'topspeed' && attack.mode !== 'loop' && (
                         <Button size="small" onClick={() => pauseAttack(attack.id)}>
                           ⏸️ Пауза
                         </Button>
                       )}
-                      <Button danger size="small" onClick={() => stopAttack(attack.id)}>
-                        🛑 Остановить
-                      </Button>
+                      {attack.mode !== 'loop' && (
+                        <Button danger size="small" onClick={() => stopAttack(attack.id)}>
+                          🛑 Остановить
+                        </Button>
+                      )}
                       {/* <Button
                         size="small"
                         onClick={async () => {
@@ -1343,14 +1345,16 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      {attack.mode !== 'topspeed' && (
+                      {attack.mode !== 'topspeed' && attack.mode !== 'loop' && (
                         <Button size="small" onClick={() => pauseBg(attack.id)}>
                           ⏸️ Пауза
                         </Button>
                       )}
-                      <Button danger size="small" onClick={() => stopBg(attack.id)}>
-                        🛑 Остановить
-                      </Button>
+                      {attack.mode !== 'loop' && (
+                        <Button danger size="small" onClick={() => stopBg(attack.id)}>
+                          🛑 Остановить
+                        </Button>
+                      )}
                       {/* <Button
                         size="small"
                         onClick={async () => {
