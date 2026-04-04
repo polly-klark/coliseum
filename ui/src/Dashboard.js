@@ -1153,9 +1153,11 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      <Button size="small" onClick={() => pauseAttack(attack.id)}>
-                        ⏸️ Пауза
-                      </Button>
+                      {attack.mode !== 'topspeed' && (
+                        <Button size="small" onClick={() => pauseAttack(attack.id)}>
+                          ⏸️ Пауза
+                        </Button>
+                      )}
                       <Button danger size="small" onClick={() => stopAttack(attack.id)}>
                         🛑 Остановить
                       </Button>

@@ -497,18 +497,26 @@ async def resume(data: dict, background_tasks: BackgroundTasks):
         original_data = r.get(f"tcpreplay:original_file:{attack_id}")
         if original_data:
             original_path = original_data.decode()
-            original_loops = int(r.get(f"tcpreplay:loops:{attack_id}"))
-            current_loop = int(r.get(f"tcpreplay:loops_current:{attack_id}"))
+            # ✅ БЕЗОПАСНЫЙ int!
+            loops_data = r.get(f"tcpreplay:loops:{attack_id}")
+            current_loop_data = r.get(f"tcpreplay:loops_current:{attack_id}")
+            
+            original_loops = int(loops_data) if loops_data else 1
+            current_loop = int(current_loop_data) if current_loop_data else 1
+            
             remaining_loops = original_loops - current_loop
             
-            logger.info(f"🔄 LOOP [{attack_id}] Доиграть круг + {remaining_loops} кругов")
+            logger.info(f"🔄 LOOP [{attack_id}] Доиграть + {remaining_loops} кругов (loops={original_loops}, current={current_loop})")
             
             # 1. Доиграть текущий (обрезанный)
             cmd1 = build_tcpreplay_command(pcap_path, "standart", mode_params)
             background_tasks.add_task(run_tcpreplay_cmd, cmd1, duration, attack_id, mode, mode_params)
             
             # 2. После — запустить оригинал с оставшимися
-            asyncio.create_task(schedule_loop_resume(attack_id, original_path, mode, mode_params, remaining_loops, duration + 1))
+            if remaining_loops > 0:
+                asyncio.create_task(schedule_loop_resume(attack_id, original_path, "loop", mode_params, remaining_loops, duration + 1))
+            else:
+                logger.info("✅ Последний круг — без schedule_loop_resume")
             
             # total_duration = duration + (get_pcap_duration(original_path) * remaining_loops)
         else:
