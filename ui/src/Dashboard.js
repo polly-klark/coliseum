@@ -970,12 +970,16 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      <Button size="small" onClick={() => pauseMod(attack.id)}>
-                        ⏸️ Пауза
-                      </Button>
-                      <Button danger size="small" onClick={() => stopMod(attack.id)}>
-                        🛑 Остановить
-                      </Button>
+                      {attack.mode !== 'topspeed' && attack.mode !== 'loop' && (
+                        <Button size="small" onClick={() => pauseMod(attack.id)}>
+                          ⏸️ Пауза
+                        </Button>
+                      )}
+                      {attack.mode !== 'loop' && (
+                        <Button danger size="small" onClick={() => stopMod(attack.id)}>
+                          🛑 Остановить
+                        </Button>
+                      )}
                       {/* <Button
                         size="small"
                         onClick={async () => {
@@ -1043,15 +1047,17 @@ const Dashboard = ({ token }) => {
                   </div>
                 )}
                 {attack.status === 'running' && attack.mode === 'loop' && (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    fontSize: '14px', 
-                    fontWeight: 500, 
-                    color: '#1890ff',
-                    marginTop: '8px'
-                  }}>
-                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
-                  </div>
+                  <Space>
+                    <Button 
+                      size="small" 
+                      onClick={() => pauseMod(attack.id)}  // ✅ Текущий круг!
+                    >
+                      ⏸️ Пауза сейчас (круг {attack.loopCurrent + 1}/{attack.loopTotal})
+                    </Button>
+                    <Button danger size="small" onClick={() => stopMod(attack.id)}>
+                      🛑 Остановить
+                    </Button>
+                  </Space>
                 )}
               </div>
             ))}
@@ -1337,9 +1343,11 @@ const Dashboard = ({ token }) => {
                   <span>📁 {attack.filename}</span>
                   {attack.status === 'running' && (
                     <div>
-                      <Button size="small" onClick={() => pauseBg(attack.id)}>
-                        ⏸️ Пауза
-                      </Button>
+                      {attack.mode !== 'topspeed' && (
+                        <Button size="small" onClick={() => pauseBg(attack.id)}>
+                          ⏸️ Пауза
+                        </Button>
+                      )}
                       <Button danger size="small" onClick={() => stopBg(attack.id)}>
                         🛑 Остановить
                       </Button>
@@ -1410,15 +1418,17 @@ const Dashboard = ({ token }) => {
                   </div>
                 )}
                 {attack.status === 'running' && attack.mode === 'loop' && (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    fontSize: '14px', 
-                    fontWeight: 500, 
-                    color: '#1890ff',
-                    marginTop: '8px'
-                  }}>
-                    🔄 Осталось кругов: {attack.loopTotal - attack.loopCurrent}
-                  </div>
+                  <Space>
+                    <Button 
+                      size="small" 
+                      onClick={() => pauseBg(attack.id)}  // ✅ Текущий круг!
+                    >
+                      ⏸️ Пауза сейчас (круг {attack.loopCurrent + 1}/{attack.loopTotal})
+                    </Button>
+                    <Button danger size="small" onClick={() => stopBg(attack.id)}>
+                      🛑 Остановить
+                    </Button>
+                  </Space>
                 )}
               </div>
             ))}
