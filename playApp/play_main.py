@@ -57,7 +57,15 @@ async def run_tcpreplay_cmd(cmd: list, delay: float, attack_id: str, mode: str =
     
     try:
         logger.info(f"🚀 [{attack_id}] Запуск: {' '.join(cmd)}")
-        
+        # 🔥 ПРОВЕРЯЕМ time_to_next ИЗ Redis!
+        time_to_next_data = r.get(f"tcpreplay:time_to_next:{attack_id}")
+        if time_to_next_data:
+            time_to_next = float(time_to_next_data)
+            logger.info(f"⏳ Resume sleep: {time_to_next:.3f}s до следующего пакета")
+            await asyncio.sleep(time_to_next)
+            r.delete(f"tcpreplay:time_to_next:{attack_id}")  # Очищаем!
+        else:
+            logger.info("⏳ Нет time_to_next — запуск сразу")
         # ✅ 1. ПАРСИМ loop ДО запуска
         loop_count = 1
         for i in range(len(cmd)):
@@ -193,6 +201,58 @@ async def schedule_loop_resume(attack_id: str, original_path: str, mode: str, mo
     # Запускаем через event loop
     asyncio.create_task(temp_tasks())
 
+def get_time_to_next_packet(pcap_path: str, elapsed_time: float) -> dict:
+    """
+    ТОЧНОЕ время ДО следующего пакета от паузы!
+    
+    Возвращает:
+    {
+        'packet_idx': номер следующего пакета,
+        'next_packet_time': время следующего от начала,
+        'time_since_last': сколько прошло после последнего,
+        'time_to_next': ⏰ СКОЛЬКО ОСТАЛОСЬ ДО следующего!
+    }
+    """
+    packets = rdpcap(pcap_path)
+    if len(packets) < 2:
+        return {'packet_idx': 0, 'time_to_next': 0.0, 'time_since_last': 0.0}
+    
+    t0 = float(packets[0].time)  # Время первого пакета
+    
+    # Находим последний пакет ДО паузы + следующий
+    last_pkt_idx = 0
+    next_pkt_idx = 1
+    
+    for i, pkt in enumerate(packets):
+        pkt_time = float(pkt.time) - t0
+        
+        if pkt_time <= elapsed_time:
+            last_pkt_idx = i  # Последний отправленный
+        else:
+            next_pkt_idx = i  # Следующий не отправленный
+            break
+    
+    # 🔥 РАСЧЁТЫ!
+    last_time = float(packets[last_pkt_idx].time) - t0
+    next_time = float(packets[next_pkt_idx].time) - t0
+    
+    time_since_last = elapsed_time - last_time    # Прошло после последнего
+    full_gap = next_time - last_time              # Полный gap между пакетами
+    time_to_next = full_gap - time_since_last     # ⏰ ОСТАЛОСЬ!
+    
+    result = {
+        'packet_idx': next_pkt_idx,
+        'last_packet_time': last_time,
+        'next_packet_time': next_time,
+        'time_since_last': time_since_last,
+        'full_gap': full_gap,
+        'time_to_next': max(0.0, time_to_next)  # Не отрицательное
+    }
+    
+    logger.info(f"⏱️ pause={elapsed_time:.3f}s последний=#{last_pkt_idx}({last_time:.3f}s) следующий=#{next_pkt_idx}({next_time:.3f}s) осталось={result['time_to_next']:.3f}s")
+    
+    return result
+
 @app.get("/hello")
 async def get_hello():
     return("Hello world!")
@@ -241,38 +301,6 @@ async def receive_file(request: Request, background_tasks: BackgroundTasks):
 
     # Возвращаем длительность проигрывания вместе с сообщением
     return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id, "mode": mode}
-
-# @app.post("/receive_file")
-# async def receive_file(request: Request, background_tasks: BackgroundTasks):
-#     # ✅ Получаем attack_id из HEADERS (от main сервера)
-#     attack_id = request.headers.get("attack-id")
-#     logger.info(f"📥 ПРОКСИ: файл для атаки '{attack_id}'")  # ← Теперь НЕ None!
-#     # Создаем временный файл для сохранения содержимого
-#     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-#         try:
-#             async for chunk in request.stream():
-#                 temp_file.write(chunk)
-
-
-#             temp_file_path = temp_file.name  # Сохраняем имя временного файла
-#             logger.info(f"Файл находится в {temp_file_path} для атаки {attack_id}")
-
-#         except Exception as e:
-#             logger.error(f"Ошибка при записи файла во временный файл: {str(e)}")
-#             raise HTTPException(status_code=500, detail="Internal Server Error")
-#     filename = request.headers.get("filename")
-#     logger.info(f"Получаю файл {filename} для запуска")
-    
-#     # Вычисляем длительность воспроизведения ДО запуска фоновой задачи
-#     duration = str(get_pcap_duration(temp_file_path))
-
-
-#     # Запуск процесса в фоновом режиме
-#     background_tasks.add_task(run_tcpreplay, temp_file_path, float(duration), attack_id)
-
-
-#     # Возвращаем длительность проигрывания вместе с сообщением
-#     return {"message": f"File {filename} received successfully", "duration": duration, "attack_id": attack_id}
 
 @app.post("/stop")
 async def stop(data: dict):  # ✅ Принимаем данные!
@@ -397,6 +425,12 @@ async def pause(data: dict):
         if cut_method == "packets":
             cut_pcap_by_packets(src_path, new_path, cut_offset)
         else:
+            gap_info = get_time_to_next_packet(src_path, cut_offset)
+            # 🔥 СОХРАНЯЕМ time_to_next в Redis!
+            r.set(f"tcpreplay:time_to_next:{attack_id}", gap_info['time_to_next'])
+            logger.info(f"⏳ До следующего пакета: {gap_info['time_to_next']:.3f}s (прошло {gap_info['time_since_last']:.3f}s из {gap_info['full_gap']:.3f}s)")
+            
+            # ✅ ТОЧНАЯ обрезка
             cut_pcap_after_offset(src_path, new_path, cut_offset)
         
         logger.info(f"✅ Обрезка OK: {new_path}")
