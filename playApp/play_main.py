@@ -42,7 +42,7 @@ def build_tcpreplay_command(pcap_path, mode, params):
         base_cmd.extend(['--loop', str(params.get('loop_count', 1))])
     elif mode == 'topspeed':
         base_cmd.append('--topspeed')
-    elif mode == 'mltiplier':
+    elif mode == 'multiplier':
         base_cmd.extend(['--multiplier', str(params.get('multiplier', 1.0))])
     elif mode == 'pps':
         base_cmd.extend(['--pps', str(params.get('pps', 100))])
@@ -403,7 +403,7 @@ async def pause(data: dict):
         if mode == "multiplier":
             multiplier = float(mode_params.get("multiplier", 1.0))
             cut_offset = elapsed * multiplier
-            logger.info(f"MULTIPLIER x{multiplier}: effective={cut_offset:.1f}s")
+            logger.info(f"MULTIPLIER x{multiplier}: effective={cut_offset:.1f}s, mode_params: {mode_params}")
             
         elif mode == "pps":
             pps = float(mode_params.get("pps", 100))
@@ -426,9 +426,14 @@ async def pause(data: dict):
             cut_pcap_by_packets(src_path, new_path, cut_offset)
         else:
             gap_info = get_time_to_next_packet(src_path, cut_offset)
-            # 🔥 СОХРАНЯЕМ time_to_next в Redis!
-            r.set(f"tcpreplay:time_to_next:{attack_id}", gap_info['time_to_next'])
-            logger.info(f"⏳ До следующего пакета: {gap_info['time_to_next']:.3f}s (прошло {gap_info['time_since_last']:.3f}s из {gap_info['full_gap']:.3f}s)")
+            if mode == "multiplier":
+                # 🔥 СОХРАНЯЕМ time_to_next в Redis!
+                r.set(f"tcpreplay:time_to_next:{attack_id}", gap_info['time_to_next'] / multiplier)
+                logger.info(f"⏳ До следующего пакета: {gap_info['time_to_next'] / multiplier}s (прошло {gap_info['time_since_last']:.3f}s из {gap_info['full_gap']:.3f}s), режим {mode}, параметры {multiplier}")
+            else: 
+                # 🔥 СОХРАНЯЕМ time_to_next в Redis!
+                r.set(f"tcpreplay:time_to_next:{attack_id}", gap_info['time_to_next'])
+                logger.info(f"⏳ До следующего пакета: {gap_info['time_to_next']:.3f}s (прошло {gap_info['time_since_last']:.3f}s из {gap_info['full_gap']:.3f}s), режим {mode}")
             
             # ✅ ТОЧНАЯ обрезка
             cut_pcap_after_offset(src_path, new_path, cut_offset)

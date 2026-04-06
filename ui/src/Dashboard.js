@@ -52,7 +52,7 @@ export function PlayProvider({ children }) {
     { label: 'Обычный', value: 'standart' },
     { label: 'Зациклить', value: 'loop' },
     { label: 'Максимальная скорость', value: 'topspeed' },
-    { label: 'Умножить скорость', value: 'mltiplier' },
+    { label: 'Умножить скорость', value: 'multiplier' },
     { label: 'Скорость вручную', value: 'pps' },
   ];
   // const startAttack = (durationMs) => {
@@ -90,7 +90,7 @@ const renderModeOptions = () => {
       );
     case 'topspeed':
       return <div>Максимальная скорость — игнорируются задержки</div>;
-    case 'mltiplier':
+    case 'multiplier':
       return (
         <div>
           <p>Множитель скорости:</p>

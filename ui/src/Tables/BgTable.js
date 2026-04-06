@@ -78,7 +78,7 @@ const BgTable = ({ data, user, token, fetchData }) => {
       case 'loop':
         modeParams.loop_count = loopCount;
         break;
-      case 'mltiplier':
+      case 'multiplier':
         modeParams.multiplier = multiplier;
         break;
       case 'pps':

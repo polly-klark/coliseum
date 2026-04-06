@@ -628,7 +628,7 @@ async def send_file(filename: str, request: Request):
     attack_id = frontend_data.get("attack_id", "unknown")
     mode = frontend_data.get("mode", "standart")      # режим
     mode_params = frontend_data.get("mode_params", {}) # параметры режима
-    logger.info(f"Передаю файл {filename} для запуска")
+    logger.info(f"Передаю файл {filename} для запуска, mode: {mode}, mode_params: {mode_params}")
     # Открываем поток для чтения файла из GridFS по имени
     try:
         grid_out = await fsa.open_download_stream_by_name(filename)
