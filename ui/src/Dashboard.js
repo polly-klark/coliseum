@@ -407,12 +407,12 @@ const stopAttack = async (attackId) => {
     });
 
     /// 3️⃣ Backend: только attackId!
-    console.log(`🛑 Останавливаю шаблон ${attackId}`);
+    // console.log(`🛑 Останавливаю шаблон ${attackId}`);
     await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
     message.success(`🛑 "${attack?.filename || 'шаблон'}" остановлен`);  // ✅ Безопасно!
     
   } catch (error) {
-    console.error("Ошибка при остановке:", error);
+    // console.error("Ошибка при остановке:", error);
     message.error(`Ошибка при остановке`);
     // ✅ Откатываем статус если backend упал
     // setActiveAttacks(prev => {
@@ -438,12 +438,12 @@ const stopBg = async (attackId) => {
       return updated;
     });
     /// 3️⃣ Backend: только attackId!
-    console.log(`🛑 Останавливаю фоновый ${attackId}`);
+    // console.log(`🛑 Останавливаю фоновый ${attackId}`);
     await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
     message.success(`🛑 "${attack?.filename || 'фоновый трафик'}" остановлен`);  // ✅ Безопасно!
     
   } catch (error) {
-    console.error("Ошибка при остановке:", error);
+    // console.error("Ошибка при остановке:", error);
     message.error(`Ошибка при остановке`);
     // ✅ Откатываем статус если backend упал
     // setActiveAttacks(prev => {
@@ -469,12 +469,12 @@ const stopMod = async (attackId) => {
       return updated;
     });
     /// 3️⃣ Backend: только attackId!
-    console.log(`🛑 Останавливаю атаку ${attackId}`);
+    // console.log(`🛑 Останавливаю атаку ${attackId}`);
     await axios.post(`http://127.0.0.1:8000/stop/${attackId}`);
     message.success(`🛑 "${attack?.filename || 'атака'}" остановлена`);  // ✅ Безопасно!
     
   } catch (error) {
-    console.error("Ошибка при остановке:", error);
+    // console.error("Ошибка при остановке:", error);
     message.error(`Ошибка при остановке`);
     // ✅ Откатываем статус если backend упал
     // setActiveAttacks(prev => {
@@ -749,7 +749,6 @@ const Dashboard = ({ token }) => {
       setDeadLineAttack(0);
       setPercentAttack(0);
     } catch (error) {
-      console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
     }
   };
@@ -759,7 +758,6 @@ const Dashboard = ({ token }) => {
       message.success(`Процесс успешно остановлен`);
       setDeadLineBg(0);
     } catch (error) {
-      console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
     }
   };
@@ -769,7 +767,6 @@ const Dashboard = ({ token }) => {
       message.success(`Процесс успешно остановлен`);
       setDeadLineMod(0);
     } catch (error) {
-      console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
     }
   };
@@ -848,7 +845,6 @@ const Dashboard = ({ token }) => {
       });
       setData(response.data);
     } catch (error) {
-      console.error("Ошибка при получении данных:", error);
       setData([]); // В случае ошибки устанавливаем пустой массив
     }
   };
@@ -874,7 +870,6 @@ const Dashboard = ({ token }) => {
         });
         setUser(response.data); // Предполагается, что API возвращает объект с полем username
       } catch (error) {
-        console.error("Ошибка при получении данных:", error);
         setUser(null);
       }
     };
@@ -922,7 +917,6 @@ const Dashboard = ({ token }) => {
       }
     } catch (error) {
       message.error('Ошибка остановки атаки');
-      console.error(error);
     }
   };
   return (

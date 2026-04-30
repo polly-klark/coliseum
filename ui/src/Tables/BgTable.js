@@ -38,7 +38,6 @@ const BgTable = ({ data, user, token, fetchData }) => {
       // Вызываем fetchData для обновления данных
       await fetchData("background"); // Дождитесь завершения fetchData
     } catch (error) {
-      console.error("Ошибка при удалении файла:", error);
       message.error(`Ошибка при удалении файла "${filename}"`);
     }
   };
@@ -61,14 +60,12 @@ const BgTable = ({ data, user, token, fetchData }) => {
       window.URL.revokeObjectURL(url);
       message.success(`Файл "${filename}" успешно передан на скачивание`);
     } catch (error) {
-      console.error("Ошибка при получении файла:", error);
       message.error(`Ошибка при получении файла "${filename}"`);
     }
   };
 
   const handlePlay = async (filename, event) => {
     event.preventDefault();
-    console.log(`Проигрывается файл ${filename} в режиме ${selectedMode}`);
   
     const attackId = Date.now() + Math.random().toString(36);
     const modeParams = {};
@@ -113,7 +110,6 @@ const BgTable = ({ data, user, token, fetchData }) => {
   
       message.success(`Файл "${filename}" запущен в режиме ${selectedMode}`);
     } catch (error) {
-      console.error("Ошибка при передаче файла:", error);
       message.error(`Ошибка при запуске "${filename}"`);
     }
   };
@@ -131,7 +127,6 @@ const BgTable = ({ data, user, token, fetchData }) => {
       message.success(`Процесс успешно остановлен`);
       setDeadLineBg(0);
     } catch (error) {
-      console.error("Ошибка при остановке:", error);
       message.error(`Ошибка при остановке`);
     }
   }

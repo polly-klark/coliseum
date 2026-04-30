@@ -22,7 +22,7 @@ const Login = ({ setToken }) => {
       );
       setToken(response.data.access_token); // Устанавливаем токен
     } catch (error) {
-      console.error("Ошибка авторизации:", error);
+      // console.error("Ошибка авторизации:", error);
     }
   };
 

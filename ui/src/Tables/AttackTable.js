@@ -126,13 +126,13 @@ const AttackTable = ({ data, user, token, fetchData }) => {
           item.ip_key === key || item.tcp_key === key || item.udp_key === key || item.mac_key === key || item.ttl_key === key
         );
 
-        console.log("🔍 Все ключи fileData:", fileData.map(item => ({
-          ip_key: item.ip_key, 
-          tcp_key: item.tcp_key, 
-          udp_key: item.udp_key, 
-          mac_key: item.mac_key,  // ← Проверь есть ли!
-          ttl_key: item.ttl_key
-        })));
+        // console.log("🔍 Все ключи fileData:", fileData.map(item => ({
+        //   ip_key: item.ip_key, 
+        //   tcp_key: item.tcp_key, 
+        //   udp_key: item.udp_key, 
+        //   mac_key: item.mac_key,  // ← Проверь есть ли!
+        //   ttl_key: item.ttl_key
+        // })));
         
         if (!record) return null;
         
@@ -178,11 +178,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     })
     .filter(Boolean); // Убираем null
     
-    console.log("Активные строки:", result);
-    // console.log(`ip: ${JSON.stringify(result.filter(item => item.ip).map(item => ({
-    //   key: parseInt(item.key.split('_')[1]),
-    //   ip: item.ip
-    // })), null, 2)}`);  
     try {
       await axios.post(
         `http://127.0.0.1:8000/modification/${filename}`,
@@ -220,10 +215,8 @@ const AttackTable = ({ data, user, token, fetchData }) => {
         `Файл "${filename}" успешно изменён и помещён в "Ваши атаки"`
       );
     } catch (error) {
-      console.error("Ошибка при модификации файла:", error);
       message.error(`Ошибка при модификации файла "${filename}"`);
     }
-    console.log(`"${newFilename}"`);
     setNewFilename("");
     setOpen(false);
     setDisabledRadio(true);
@@ -550,7 +543,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   };
   const handlePlay = async (filename, event) => {
     event.preventDefault();
-    console.log(`Проигрывается файл ${filename} в режиме ${selectedMode}`);
   
     const attackId = Date.now() + Math.random().toString(36);
     const modeParams = {};
@@ -595,7 +587,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   
       message.success(`Файл "${filename}" запущен в режиме ${selectedMode}`);
     } catch (error) {
-      console.error("Ошибка при передаче файла:", error);
       message.error(`Ошибка при запуске "${filename}"`);
     }
   };
@@ -615,7 +606,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       // Вызываем fetchData для обновления данных
       await fetchData("attack"); // Дождитесь завершения fetchData
     } catch (error) {
-      console.error("Ошибка при удалении файла:", error);
       message.error(`Ошибка при удалении файла "${filename}"`);
     }
   };
@@ -638,7 +628,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
       window.URL.revokeObjectURL(url);
       message.success(`Файл "${filename}" успешно передан на скачивание`);
     } catch (error) {
-      console.error("Ошибка при получении файла:", error);
       message.error(`Ошибка при получении файла "${filename}"`);
     }
   };
@@ -700,12 +689,7 @@ const AttackTable = ({ data, user, token, fetchData }) => {
     setActiveRows({});
     setInputValues({});
 
-      // console.log(response.data);
-      // console.log(ipData);
-      // console.log(tcpData);
-      // console.log(udpData);
     } catch (error) {
-      console.error("Ошибка при получении данных:", error);
       setFileData([]); // В случае ошибки устанавливаем пустой массив
     }
   };
@@ -729,7 +713,6 @@ const AttackTable = ({ data, user, token, fetchData }) => {
   //     message.success(`Процесс успешно остановлен`);
   //     setDeadLineAttack(0);
   //   } catch (error) {
-  //     console.error("Ошибка при остановке:", error);
   //     message.error(`Ошибка при остановке`);
   //   }
   // };
